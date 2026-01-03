@@ -1,0 +1,89 @@
+QWidget { 
+            background-color: #222222; 
+            color: #ffffff; 
+            font-family: Arial;
+            font-size: 20px;
+}
+
+QToolButton {
+            qproperty-autoRaise: false;
+            border: none;
+            icon-size: 50px;
+}
+QToolButton:hover {
+            background-color: #555555
+}
+
+QMenuBar {
+            background-color: #222222;
+            color: #ffffff;
+            font-size: 16px;
+            padding: 5px;
+}
+QMenuBar::item {
+
+}
+QMenuBar::item:selected {
+            background-color: #555555;
+            border: 1px solid #999999;
+}
+QMenu {
+            background-color: #555555;
+            border: 1px solid #999999;
+            font-size: 16px;
+}
+
+QDockWidget::title {
+            background: #555555;
+            color: #ffffff; 
+            font-size: 16px;
+            border: 1px solid #555555;
+            border-bottom: none;
+            padding: 5px;
+}
+
+QTabWidget::pane {
+            border: 1px solid #555555;
+}
+QTabBar::tab {
+            background: #222222;
+            color: #ffffff;
+            padding: 8px 15px;
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+}
+QTabBar::tab:selected {
+            background: #6544db;
+            color: #ffffff;
+}
+
+QLineEdit { 
+            background-color: #3c3f41;
+            border: 1px solid #5c5f61;
+            border-radius: 4px;
+            padding: 4px;
+        }
+
+QPushButton { 
+            background-color: #4CAF50; 
+            padding: 10px; 
+            border-radius: 5px; 
+        }
+QPushButton:checked { 
+            background-color: #E03C3C; 
+        }
+QPushButton:hover { 
+            background-color: #66BB6A; 
+        }
+
+QTableView {
+            font-size: 16px;
+}
+QTableView::item {
+            border: 1px solid #555555;
+            padding: 2px;
+}
+QTableView::item:selected {
+            background-color: #555555;
+            color: #ffffff;
+}

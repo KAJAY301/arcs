@@ -1,0 +1,22 @@
+Metadata-Version: 2.4
+Name: arcs
+Version: 1.2.0
+Summary: Auto Register Control System for printing machine
+Author: Yang Tang Wei
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Requires-Dist: opencv-python
+Requires-Dist: python-dotenv
+Requires-Dist: numpy
+Requires-Dist: pypylon
+Requires-Dist: PyQt5
+Requires-Dist: pyqtgraph
+Requires-Dist: ultralytics
+
+
+
+```
+Set-ExecutionPolicy RemoteSigned -Scope Process
+.venv\\Scripts\\activate 
+```
+

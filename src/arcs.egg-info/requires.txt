@@ -1,0 +1,7 @@
+opencv-python
+python-dotenv
+numpy
+pypylon
+PyQt5
+pyqtgraph
+ultralytics

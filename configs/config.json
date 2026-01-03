@@ -1,0 +1,22 @@
+{
+  "ui": {
+    "theme": "dark"
+  },
+  "setting": {
+    "length_cm": 20.0,
+    "speed_m_min": 50.0,
+    "pixel_mm": 0.045,
+    "alarm_dist": 0.1,
+    "manual_move_mm": 1
+  },
+  "camera": {
+    "reverse_x": true,
+    "width": 1024,
+    "PixelFormat": "BGR8"
+  },
+  "inference": {
+    "model": "pose_two_cross_best ",
+    "conf_threshold": 0.5,
+    "iou_threshold": 0.9
+  }
+}

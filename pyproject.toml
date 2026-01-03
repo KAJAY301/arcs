@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "arcs"
+version = "1.2.0"
+description = "Auto Register Control System for printing machine"
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [{ name = "Yang Tang Wei" }]
+dependencies = [
+    "opencv-python", 
+    "python-dotenv", 
+    "numpy", 
+    "pypylon", 
+    "PyQt5", 
+    "pyqtgraph", 
+    "ultralytics"
+]
+
+[project.scripts]
+run-app = "arcs.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"*" = ["*.json", "*.qss", "*.yaml", "*.pt"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.black]
+line-length = 100
+target-version = ['py38']
