@@ -35,29 +35,29 @@ PLC Y000 = X軸脈衝
 "R"   : Y000
 
 
-git 
-# 1. 將所有變更加入暫存區 (確認要存哪些檔案)
+# git 
+**1. 將所有變更加入暫存區 (確認要存哪些檔案)**
 git add .
 
-# 2. 建立存檔點 (寫下你這次改了什麼)
+**2. 建立存檔點 (寫下你這次改了什麼)**
 git commit -m "修正關鍵點提取邏輯並優化繪圖顏色"
 
-# 3. 同步到 GitHub (推送到雲端)
+**3. 同步到 GitHub (推送到雲端)**
 git push
 
-# 取得 GitHub 上最新的程式碼
+**取得 GitHub 上最新的程式碼**
 git pull
 
-# 回到上一次 commit 的狀態 注意：這會清除所有尚未 commit 的修改！
+**回到上一次 commit 的狀態 注意：這會清除所有尚未 commit 的修改！**
 git checkout .
 
 
 如果你想嘗試一個很危險的功能（例如「自動裁切推論」），但不確定會不會改壞現有的穩定版本，可以開一個「分身」：
-# 1. 建立並切換到新分支
+**1. 建立並切換到新分支**
 git checkout -b feature-auto-crop
 
-# ... 在這裡盡情改 Code ...
+... 在這裡盡情改 Code ...
 
-# 2. 如果成功了，切換回 main 並合併
+**2. 如果成功了，切換回 main 並合併**
 git checkout main
 git merge feature-auto-crop
