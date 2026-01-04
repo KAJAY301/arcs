@@ -23,4 +23,3 @@ src/arcs/ui/log_dock.py
 src/arcs/ui/main_ui.py
 src/arcs/utils/__init__.py
 src/arcs/utils/config_manager.py
-test/test.py
