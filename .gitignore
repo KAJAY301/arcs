@@ -2,17 +2,13 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-
 .venv/
 .env
 .DS_Store
 build/
 *.bak
 
+models/*.pt
 
-models/
-*.pt
-
-
-test/model_result/
-test/test_img/
+test/model_result
+test/test_img/*.jpg
