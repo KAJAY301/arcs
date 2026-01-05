@@ -109,6 +109,6 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     
     img_directory = "test/test_img"
-    test_node = FirstModelResult(img_directory)
+    test_node = SecondModelResult(img_directory)
     
     sys.exit(app.exec_())
