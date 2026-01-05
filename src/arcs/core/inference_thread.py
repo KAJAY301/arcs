@@ -40,7 +40,7 @@ class InferenceThread(QThread):
                 conf=self.conf, 
                 iou=self.iou, 
                 max_det=1, 
-                #verbose=False
+                verbose=False
             )
             res = results[0]
             if res.boxes:
@@ -70,6 +70,7 @@ class InferenceThread(QThread):
             first_points_list = []
             second_points_list = []
             # Using box:
+            
             if res.boxes:
                 for box in res.boxes:
                     cls_id = int(box.cls[0])
@@ -81,6 +82,7 @@ class InferenceThread(QThread):
                         first_points_list.append((cx, cy))
                     elif "second_cross" in label:
                         second_points_list.append((cx, cy))
+            
             # Using pose:
             """
             if res.keypoints:
@@ -128,11 +130,11 @@ class InferenceThread(QThread):
         # Padding
         crop_padded = cv2.copyMakeBorder(
             crop, top, bottom, left, right, 
-            cv2.BORDER_CONSTANT, value=(255, 255, 255)
+            cv2.BORDER_CONSTANT, value=(150, 150, 150)
         )
 
         # BGR to RGB for Qt
-        crop_rgb = cv2.cvtColor(crop_padded, cv2.COLOR_BGR2RGB)
+        #crop_rgb = cv2.cvtColor(crop_padded, cv2.COLOR_BGR2RGB)
         """
         #cv2 to QImage
         h, w, ch = crop_rgb.shape
@@ -140,7 +142,7 @@ class InferenceThread(QThread):
         q_img = QImage(crop_rgb.data, w, h, bytes_per_line, QImage.Format_RGB888).copy()
         self.last_crop = q_img
         """
-        return crop_rgb
+        return crop_padded
     
     def find_cores_points(self, first_points_list, second_points_list):
         if not first_points_list or not second_points_list:
@@ -176,7 +178,7 @@ class InferenceThread(QThread):
             second_points_list = coordinate[1]
             f_pt, s_pt = self.find_cores_points(first_points_list, second_points_list)
 
-            data = {"first": f_pt, "color": s_pt}
+            data = {"first": f_pt, "second": s_pt}
 
             q_img = cv2_to_qimage(img)
             self.last_crop = q_img

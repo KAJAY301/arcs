@@ -77,21 +77,19 @@ class SecondModelResult():
     def mark_inference_result(self, data, q_img):
         filename = self.image_files[self.current_index]
 
-        w_pt = data.get('white')
-        c_pt = data.get('color')
+        f_pt = data.get('first')
+        s_pt = data.get('second')
 
         draw_img = qimage_to_cv2(q_img)
 
-        if w_pt and c_pt:
-            dx = (c_pt[0] - w_pt[0])
-            dy = (c_pt[1] - w_pt[1])
-            w = (300, 300)
-            c = (int(300 + 2 * dx), int(300 + 2 * dy))
+        if f_pt and s_pt:
+            dx = (s_pt[0] - f_pt[0])
+            dy = (s_pt[1] - f_pt[1])
 
-            cv2.circle(draw_img, w, 2, (255, 255, 255), -1)
-            cv2.circle(draw_img, c, 2, (0, 0, 255), -1)
+            cv2.circle(draw_img, f_pt, 2, (255, 255, 255), -1)
+            cv2.circle(draw_img, s_pt, 2, (0, 0, 255), -1)
 
-            print(f"  Result -> White: {w_pt}, Color: {c_pt}, Offset: ({dx}, {dy})")
+            print(f"  Result -> White: {f_pt}, Color: {s_pt}, Offset: ({dx}, {dy})")
         else:
             print(f"  Warning: Target not found in {filename}")
             
