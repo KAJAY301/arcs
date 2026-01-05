@@ -12,12 +12,16 @@ from arcs.utils.config_manager import load_model_path, load_json_config
 from arcs.utils.image_processor import qimage_to_cv2
 from arcs.core.inference_thread import InferenceThread
 
-class FirstModelResult():
+class SecondModelResult():
     def __init__(self, img_dir):
         self.cfg = load_json_config()
         inf_cfg = self.cfg.get("inference", {})
+
         first_model = inf_cfg.get("first_model")
-        self.model_path = load_model_path(first_model)
+        second_model = inf_cfg.get("second_model")
+        
+        self.first_model_path = load_model_path(first_model)
+        self.second_model_path = load_model_path(second_model)
 
         self.img_dir = img_dir
         self.output_dir = os.path.join("test", "second_model_result")

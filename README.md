@@ -19,8 +19,12 @@ pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
 mock camera:
 python test\mock_camera.py
 
-model_result:
-python test\model_result.py
+first_model_result:
+python test\first_model_result.py
+
+second_model_result:
+python test\second_model_result.py
+
 
 .env的ip = PLC/parameter/ethernet port/IP address = ENET-L/Operational setting/IP address
 test connection: CMD `ping "IP"`

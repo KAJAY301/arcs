@@ -12,3 +12,5 @@ models/*.pt
 
 test/model_result
 test/test_img/*.jpg
+test/first_model_result/*.jpg
+test/second_model_result/*.jpg
