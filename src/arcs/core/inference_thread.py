@@ -22,7 +22,7 @@ class InferenceThread(QThread):
         self.conf = conf_thresh
         self.iou = iou_thresh
         self.frame_q = Queue(maxsize=2)
-        self.display_size = display_size
+        #self.display_size = display_size
         self.running = True
         self.last_crop = None
 
@@ -175,12 +175,13 @@ class InferenceThread(QThread):
             first_points_list = coordinate[0]
             second_points_list = coordinate[1]
             f_pt, s_pt = self.find_cores_points(first_points_list, second_points_list)
+
             data = {"first": f_pt, "color": s_pt}
 
             q_img = cv2_to_qimage(img)
             self.last_crop = q_img
-
             img_to_send = q_img if q_img is not None else (self.last_crop if self.last_crop else QImage())
+
             self.result_ready.emit(data, img_to_send)
     
     def stop(self):

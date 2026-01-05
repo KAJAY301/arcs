@@ -23,8 +23,6 @@ def load_resource_path(name: str) -> str:
         print(f"[config] failed to load {resource_path}: {e}")
         return ""
 
-
-
 def load_model_path(model_name: str = "best") -> str:
     """
     return: `model_path`

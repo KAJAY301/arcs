@@ -3,18 +3,21 @@ import cv2
 import sys
 import shutil
 import numpy as np
+
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QImage
 from PyQt5.QtWidgets import QApplication
+
 from arcs.utils.config_manager import load_model_path, load_json_config
+from arcs.utils.image_processor import qimage_to_cv2
 from arcs.core.inference_thread import InferenceThread
 
-class ModelResult():
+class FirstModelResult():
     def __init__(self, img_dir):
         self.cfg = load_json_config()
         inf_cfg = self.cfg.get("inference", {})
-        model = inf_cfg.get("model")
-        self.model_path = load_model_path(model)
+        first_model = inf_cfg.get("first_model")
+        self.model_path = load_model_path(first_model)
 
         self.img_dir = img_dir
         self.output_dir = os.path.join("test", "model_result")
@@ -34,7 +37,7 @@ class ModelResult():
             model_path = self.model_path,
             conf_thresh = inf_cfg.get("conf_threshold"),
             iou_thresh = inf_cfg.get("iou_threshold"),
-            display_size = (600, 600)
+            display_size = (600, 600)#unused
         )
 
         self.infer_thread.result_ready.connect(self.mark_inference_result, Qt.QueuedConnection)
@@ -72,7 +75,7 @@ class ModelResult():
         w_pt = data.get('white')
         c_pt = data.get('color')
 
-        draw_img = self.qimage_to_cv2(q_img)
+        draw_img = qimage_to_cv2(q_img)
 
         if w_pt and c_pt:
             dx = (c_pt[0] - w_pt[0])
@@ -92,15 +95,6 @@ class ModelResult():
 
         self.current_index += 1
         self.process_next_image()
-
-    def qimage_to_cv2(self, q_img):
-        q_img = q_img.convertToFormat(QImage.Format_RGB888)
-        width = q_img.width()
-        height = q_img.height()
-        ptr = q_img.bits()
-        ptr.setsize(height * width * 3)
-        arr = np.frombuffer(ptr, np.uint8).reshape((height, width, 3))
-        return cv2.cvtColor(arr, cv2.COLOR_RGB2BGR)
             
     def finish_all(self):
         self.infer_thread.stop()
@@ -110,6 +104,6 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     
     img_directory = "test/test_img"
-    test_node = ModelResult(img_directory)
+    test_node = FirstModelResult(img_directory)
     
     sys.exit(app.exec_())
