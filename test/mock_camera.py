@@ -55,8 +55,9 @@ class MockInstantCamera:
         if img_path is None:
             return MagicMock(GrabSucceeded=lambda: False)
             
-        frame = cv2.imread(img_path)
-
+        frame = cv2.imread(img_path)#imread as BGR
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)#convert to RGB
+        
         self.last_grab_time = time.time()
         return MockGrabResult(frame)
 

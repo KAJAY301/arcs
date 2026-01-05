@@ -381,13 +381,13 @@ class main_ui(QMainWindow):
                                                    Qt.SmoothTransformation))
             """
         if self.is_detecting:
-            w_pt = data['white']
-            c_pt = data['color']
+            f_pt = data.get('first')
+            s_pt = data.get('second')
 
-            if w_pt and c_pt:
+            if f_pt and s_pt:
                 pixel_mm = float(self.pixel_input.text())
-                dx_mm = (c_pt[0] - w_pt[0]) * pixel_mm
-                dy_mm = (c_pt[1] - w_pt[1]) * pixel_mm
+                dx_mm = (s_pt[0] - f_pt[0]) * pixel_mm
+                dy_mm = (s_pt[1] - f_pt[1]) * pixel_mm
                 #LogDock.update_plot(dx_mm, dy_mm)
 
                 """

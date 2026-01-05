@@ -64,7 +64,7 @@ class InferenceThread(QThread):
                 img, 
                 conf=self.conf, 
                 iou=self.iou, 
-                #verbose=False
+                verbose=False
             )
             res = results[0]
             first_points_list = []
