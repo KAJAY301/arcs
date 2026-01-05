@@ -60,7 +60,7 @@ class InferenceThread(QThread):
         pt[1] = second_cross coordinates \n
         """
         try:
-            results = self.first_model.predict(
+            results = self.second_model.predict(
                 img, 
                 conf=self.conf, 
                 iou=self.iou, 
@@ -69,7 +69,7 @@ class InferenceThread(QThread):
             res = results[0]
             first_points_list = []
             second_points_list = []
-            # When using box:
+            # Using box:
             if res.boxes:
                 for box in res.boxes:
                     cls_id = int(box.cls[0])
@@ -81,7 +81,7 @@ class InferenceThread(QThread):
                         first_points_list.append((cx, cy))
                     elif "second_cross" in label:
                         second_points_list.append((cx, cy))
-            # When using pose:
+            # Using pose:
             """
             if res.keypoints:
                 for i, box in enumerate(res.boxes):

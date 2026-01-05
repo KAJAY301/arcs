@@ -16,7 +16,7 @@
   },
   "inference": {
     "first_model": "pose_two_cross_11n", 
-    "second_model": "pose_two_cross_8n",
+    "second_model": "pose_two_cross_11n_640",
     "conf_threshold": 0.5,
     "iou_threshold": 0.9
   }
