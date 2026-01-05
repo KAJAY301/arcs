@@ -15,7 +15,8 @@
     "PixelFormat": "BGR8"
   },
   "inference": {
-    "model": "pose_two_cross_8n ",
+    "first_model": "box_all_cross_best", 
+    "second_model": "pose_two_cross_8n",
     "conf_threshold": 0.5,
     "iou_threshold": 0.9
   }

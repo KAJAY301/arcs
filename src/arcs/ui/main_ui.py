@@ -43,10 +43,16 @@ class main_ui(QMainWindow):
 
         # Init Inference Thread
         inf_cfg = self.cfg.get("inference", {})
-        model = inf_cfg.get("model")
-        self.model_path = load_model_path(model)
+
+        first_model = inf_cfg.get("first_model")
+        second_model = inf_cfg.get("second_model")
+        
+        self.first_model_path = load_model_path(first_model)
+        self.second_model_path = load_model_path(second_model)
+
         self.infer_thread = InferenceThread(
-            model_path = self.model_path,
+            first_model_path = self.first_model_path, 
+            second_model_path = self.second_model_path,
             conf_thresh = inf_cfg.get("conf_threshold"),
             iou_thresh = inf_cfg.get("iou_threshold"),
             display_size = (500, 500)
