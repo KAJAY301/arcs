@@ -20,7 +20,7 @@ class FirstModelResult():
         self.model_path = load_model_path(first_model)
 
         self.img_dir = img_dir
-        self.output_dir = os.path.join("test", "model_result")
+        self.output_dir = os.path.join("test", "second_model_result")
         self.prepare_output_directory()
         self.is_detecting = True
 
@@ -34,10 +34,11 @@ class FirstModelResult():
             sys.exit(1)
 
         self.infer_thread = InferenceThread(
-            model_path = self.model_path,
+            first_model_path = self.first_model_path, 
+            second_model_path = self.second_model_path,
             conf_thresh = inf_cfg.get("conf_threshold"),
             iou_thresh = inf_cfg.get("iou_threshold"),
-            display_size = (600, 600)#unused
+            display_size = (500, 500)
         )
 
         self.infer_thread.result_ready.connect(self.mark_inference_result, Qt.QueuedConnection)
