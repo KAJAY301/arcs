@@ -13,6 +13,7 @@ from pypylon import pylon
 from arcs.ui.custom_title_bar import CustomTitleBar, title_bar_height
 from arcs.ui.log_dock import LogDock
 from arcs.utils.config_manager import load_model_path, load_env_config, load_json_config, save_json_config_atomic
+from arcs.utils.camera_cotroller import Camera
 from arcs.core.inference_thread import InferenceThread
 from arcs.core.plc_client_thread import PLCClientThread
 
@@ -26,14 +27,14 @@ class main_ui(QMainWindow):
         # Config setup
         self.cfg = load_json_config()
 
+        # Camera Setup
+        self.camera = Camera()
+        #self.camera_timer = QTimer()
+        #self.camera_timer.timeout.connect(self.grab_frame)
+
         #initial ui, media
         self.init_ui()
         self.init_media()
-
-        # Camera Setup
-        self.camera = None
-        self.camera_timer = QTimer()
-        self.camera_timer.timeout.connect(self.grab_frame)
 
         # Parameters initialization
         self.last_send_time = 0
@@ -50,15 +51,8 @@ class main_ui(QMainWindow):
         self.first_model_path = load_model_path(first_model)
         self.second_model_path = load_model_path(second_model)
 
-        self.infer_thread = InferenceThread(
-            first_model_path = self.first_model_path, 
-            second_model_path = self.second_model_path,
-            conf_thresh = inf_cfg.get("conf_threshold"),
-            iou_thresh = inf_cfg.get("iou_threshold"),
-            display_size = (500, 500)
-        )
+        self.infer_thread = self.camera.infer_thread
         self.infer_thread.result_ready.connect(self.handle_inference_result)
-        self.infer_thread.start()
 
         # Init PLC Thread
         plc_cfg = load_env_config()
@@ -120,10 +114,11 @@ class main_ui(QMainWindow):
 
         self.length_cm_input.textChanged.connect(self.update_length_from_cm)
         self.length_inch_input.textChanged.connect(self.update_length_from_inch)
-        self.length_cm_input.textChanged.connect(self.update_camera_params)
-        self.length_inch_input.textChanged.connect(self.update_camera_params)
-        self.speed_input.textChanged.connect(self.update_camera_params)
-        self.pixel_input.textChanged.connect(self.update_camera_params)
+
+        self.length_cm_input.textChanged.connect(self.sync_ui_to_camera)
+        self.length_inch_input.textChanged.connect(self.sync_ui_to_camera)
+        self.speed_input.textChanged.connect(self.sync_ui_to_camera)
+        self.pixel_input.textChanged.connect(self.sync_ui_to_camera)
 
 
             # Camera start/stop button
@@ -250,6 +245,17 @@ class main_ui(QMainWindow):
         except:
             pass
 
+    def sync_ui_to_camera(self):
+        try:
+            ui_input = {
+                'length_cm_input': float(self.length_cm_input.text()),
+                'speed_input': float(self.speed_input.text()),
+                'pixel_input': float(self.pixel_input.text())
+            }
+            self.camera.update_camera_params(ui_input)
+        except ValueError:
+            pass
+    """
     def update_camera_params(self):
         try:
             camera_setting = self.cfg.get('camera', {})
@@ -289,40 +295,28 @@ class main_ui(QMainWindow):
             except: pass
         except:
             pass
-
+    """
     # Toggle
     def toggle_camera(self):
-        if self.camera:
-            # Stop
-            self.camera_timer.stop()
+        if self.camera.is_running:
             try:
-                if self.camera.IsGrabbing():
-                    self.camera.StopGrabbing()
-                self.camera.Close()
+                self.camera.stop_grabbing()
+                self.camera.close()
+                self.start_btn.setText("Start Camera")
+                self.start_btn.setStyleSheet("background-color: #4CAF50;")
+                self.status_bar.showMessage("Camera Stopped")
             except Exception as e:
-                print(f"Close error: {e}")
-            self.camera = None
-            self.start_btn.setText("Start Camera")
-            self.start_btn.setStyleSheet("background-color: #4CAF50;")
-            self.status_bar.showMessage("Camera Stopped")
+                QMessageBox.critical(self, "Camera Stop Failed", str(e))
         else:
-            # Start
             try:
-                factory = pylon.TlFactory.GetInstance()
-                self.camera = pylon.InstantCamera(factory.CreateFirstDevice())
-                self.camera.Open()
-                # Set Camera Params
-                self.update_camera_params()
-                
-                self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly)
-                self.camera_timer.start(50) 
-                
+                self.camera.open()
+                self.sync_ui_to_camera()
+                self.camera.start_grabbing()
                 self.start_btn.setText("Stop Camera")
                 self.start_btn.setStyleSheet("background-color: #E03C3C;")
                 self.status_bar.showMessage("Camera Running")
             except Exception as e:
-                QMessageBox.critical(self, "Camera Error", str(e))
-                self.status_bar.showMessage("Camera Init Failed")
+                QMessageBox.critical(self, "Camera Init Failed", str(e))
 
     def toggle_detection(self, checked):
         self.is_detecting = checked
@@ -361,6 +355,7 @@ class main_ui(QMainWindow):
         #self.status_bar.showMessage(f"Manual: {direction}(next_seq:{self.next_seq}, px:{px}, py:{py})")
 
     # Something else
+    """
     def grab_frame(self):
         if self.camera and self.camera.IsGrabbing():
             try:
@@ -371,7 +366,7 @@ class main_ui(QMainWindow):
                 res.Release()
             except Exception:
                 pass
-
+    """
     def handle_inference_result(self, data, q_img):
         if not q_img.isNull():
             self.img_label.setPixmap(QPixmap.fromImage(q_img))
@@ -494,9 +489,12 @@ class main_ui(QMainWindow):
 
         self.infer_thread.stop()
         self.plc_thread.stop()
-        if self.camera:
-            try: self.camera.Close()
-            except: pass
+        if self.camera.is_running:
+            try: 
+                self.camera.stop_grabbing()
+                self.camera.close()
+            except:
+                pass
         event.accept()
 
     def read_ui_to_cfg(self):

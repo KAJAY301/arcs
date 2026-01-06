@@ -1,0 +1,102 @@
+from pypylon import pylon
+from PyQt5.QtCore import QTimer
+
+from arcs.core.inference_thread import InferenceThread
+from arcs.utils.config_manager import load_json_config, load_model_path
+class Camera:
+    def __init__(self, position=(0, 0, 0), rotation=(0, 0, 0), fov=60):
+        self.is_running = False
+        self.pylon_camera = None
+        self.cfg = load_json_config()
+        self.camera_timer = QTimer()
+        self.camera_timer.timeout.connect(self.grab_frame)
+
+        inf_cfg = self.cfg.get("inference", {})
+
+        first_model = inf_cfg.get("first_model")
+        second_model = inf_cfg.get("second_model")
+        
+        self.first_model_path = load_model_path(first_model)
+        self.second_model_path = load_model_path(second_model)
+        self.infer_thread = InferenceThread(
+            first_model_path = self.first_model_path, 
+            second_model_path = self.second_model_path,
+            conf_thresh = inf_cfg.get("conf_threshold"),
+            iou_thresh = inf_cfg.get("iou_threshold"),
+            display_size = (500, 500)
+        )
+        self.infer_thread.start()
+
+
+    def open(self):
+        """
+        Open the camera connection.
+        """
+        factory = pylon.TlFactory.GetInstance()
+        self.pylon_camera = pylon.InstantCamera(factory.CreateFirstDevice())
+        self.pylon_camera.Open()
+
+    def start_grabbing(self):
+        """
+        Start the camera and begin grabbing frames.
+        """
+        self.pylon_camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly)
+        self.camera_timer.start(50) 
+        self.is_running = True
+
+    def stop_grabbing(self):
+        """
+        Stop the camera and release resources.
+        """
+        self.camera_timer.stop()
+        if self.pylon_camera.IsGrabbing():
+            self.pylon_camera.StopGrabbing()
+        self.is_running = False
+
+    def close(self):
+        """
+        Close the camera connection.
+        """
+        self.pylon_camera.Close()
+
+    def update_camera_params(self, ui_input: dict|None = None):
+        """
+        Update camera parameters based on UI input and config.json.
+        """
+        try:
+            camera_param = self.cfg.get('camera')
+
+            cm_value     = ui_input.get('length_cm_input')     #cm
+            speed_value  = ui_input.get('speed_input')         #m/min
+            pixel_value  = ui_input.get('pixel_input')         #mm  
+
+            line_rate_hz = (speed_value*1000) / (pixel_value*60)   #line/s
+            exposure_us  = max(1, int(1e6 / line_rate_hz))         #us
+            target_height= int((cm_value*10) / pixel_value)        #pixels
+
+            try:
+                self.pylon_camera.PixelFormat.SetValue(camera_param.get('pixel_format'))
+                self.pylon_camera.ReverseX.SetValue(camera_param.get('reverse_x'))
+                self.pylon_camera.Width.SetValue(camera_param.get('width'))
+
+                self.pylon_camera.AcquisitionLineRate.SetValue(line_rate_hz)
+                self.pylon_camera.ExposureTime.SetValue(exposure_us)
+                self.pylon_camera.Height.SetValue(target_height)
+            except:
+                pass
+        except Exception as e:
+            print(f"Error updating camera params: {e}")
+
+    def grab_frame(self):
+        if self.is_running:
+            try:
+                # timeout:500ms, If timeout, throw exception. or can use (pylon.TimeoutHandling_Return) to return None
+                res = self.pylon_camera.RetrieveResult(500, pylon.TimeoutHandling_ThrowException)
+                if res.GrabSucceeded():
+                    img = res.Array
+                    self.infer_thread.submit_frame(img)
+                res.Release()
+            except Exception:
+                pass
+
+    
