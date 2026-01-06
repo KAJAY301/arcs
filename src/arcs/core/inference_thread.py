@@ -130,7 +130,7 @@ class InferenceThread(QThread):
         # Padding
         crop_padded = cv2.copyMakeBorder(
             crop, top, bottom, left, right, 
-            cv2.BORDER_CONSTANT, value=(150, 150, 150)
+            cv2.BORDER_CONSTANT, value=(50, 50, 50)
         )
 
         # BGR to RGB for Qt
