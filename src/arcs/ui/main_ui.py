@@ -13,7 +13,7 @@ from pypylon import pylon
 from arcs.ui.custom_title_bar import CustomTitleBar, title_bar_height
 from arcs.ui.log_dock import LogDock
 from arcs.utils.config_manager import load_model_path, load_env_config, load_json_config, save_json_config_atomic
-from arcs.utils.camera_cotroller import Camera
+from arcs.core.camera_cotroller import Camera
 from arcs.core.inference_thread import InferenceThread
 from arcs.core.plc_client_thread import PLCClientThread
 
@@ -29,8 +29,6 @@ class main_ui(QMainWindow):
 
         # Camera Setup
         self.camera = Camera()
-        #self.camera_timer = QTimer()
-        #self.camera_timer.timeout.connect(self.grab_frame)
 
         #initial ui, media
         self.init_ui()
@@ -43,14 +41,6 @@ class main_ui(QMainWindow):
         self.initial_pos = None
 
         # Init Inference Thread
-        inf_cfg = self.cfg.get("inference", {})
-
-        first_model = inf_cfg.get("first_model")
-        second_model = inf_cfg.get("second_model")
-        
-        self.first_model_path = load_model_path(first_model)
-        self.second_model_path = load_model_path(second_model)
-
         self.infer_thread = self.camera.infer_thread
         self.infer_thread.result_ready.connect(self.handle_inference_result)
 
@@ -255,47 +245,7 @@ class main_ui(QMainWindow):
             self.camera.update_camera_params(ui_input)
         except ValueError:
             pass
-    """
-    def update_camera_params(self):
-        try:
-            camera_setting = self.cfg.get('camera', {})
-            cm_value     = float(self.length_cm_input.text())      #cm
-            speed_value  = float(self.speed_input.text())          #m/min
-            pixel_value  = float(self.pixel_input.text())          #mm
 
-            line_rate_hz = (speed_value*1000) / (pixel_value*60)   #line/s
-            exposure_us  = max(1, int(1e6 / self.line_rate_hz))    #us
-            target_height= int((cm_value*10) / pixel_value)
-
-            try: 
-                self.camera.ReverseX.SetValue(camera_setting.get('reverse_x'))
-
-            except: pass
-            try: 
-                self.camera.AcquisitionLineRate.SetValue(line_rate_hz)
-                self.monitor_table.setItem(1, 1, QTableWidgetItem(f"{line_rate_hz}"))
-            except: pass
-            try:
-                self.camera.ExposureTime.SetValue(exposure_us)
-                self.monitor_table.setItem(2, 1, QTableWidgetItem(f"{exposure_us}"))
-
-            except: pass
-            try: 
-                self.camera.Width.SetValue(camera_setting.get('width'))
-                self.monitor_table.setItem(4, 1, QTableWidgetItem(f"{camera_setting.get('width')}"))
-            except: pass
-            try: 
-                self.camera.Height.SetValue(target_height)
-                self.monitor_table.setItem(3, 1, QTableWidgetItem(f"{target_height}"))
-
-            except: pass
-            try: 
-                self.camera.PixelFormat.SetValue(camera_setting.get('pixel_format'))
-
-            except: pass
-        except:
-            pass
-    """
     # Toggle
     def toggle_camera(self):
         if self.camera.is_running:
@@ -355,18 +305,6 @@ class main_ui(QMainWindow):
         #self.status_bar.showMessage(f"Manual: {direction}(next_seq:{self.next_seq}, px:{px}, py:{py})")
 
     # Something else
-    """
-    def grab_frame(self):
-        if self.camera and self.camera.IsGrabbing():
-            try:
-                res = self.camera.RetrieveResult(500, pylon.TimeoutHandling_ThrowException)
-                if res.GrabSucceeded():
-                    img = res.Array
-                    self.infer_thread.submit_frame(img)
-                res.Release()
-            except Exception:
-                pass
-    """
     def handle_inference_result(self, data, q_img):
         if not q_img.isNull():
             self.img_label.setPixmap(QPixmap.fromImage(q_img))
