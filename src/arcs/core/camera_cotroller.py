@@ -3,8 +3,9 @@ from PyQt5.QtCore import QTimer
 
 from arcs.core.inference_thread import InferenceThread
 from arcs.utils.config_manager import load_json_config, load_model_path
+
 class Camera:
-    def __init__(self, position=(0, 0, 0), rotation=(0, 0, 0), fov=60):
+    def __init__(self):
         self.is_running = False
         self.pylon_camera = None
         self.cfg = load_json_config()
