@@ -51,9 +51,9 @@ def run_test():
                 crop_rgb = tester.cut_img(frame, cx, cy, size_x=640, size_y=640)
                 
                 # 3. 存檔 (將 RGB 轉回 BGR 才能正確用 cv2 儲存)
-                save_path = os.path.join(output_dir, f"{idx}.jpg")
+                save_path = os.path.join(output_dir, f"{idx+154}.jpg")
                 crop_bgr = cv2.cvtColor(crop_rgb, cv2.COLOR_RGB2BGR)
-                cv2.imwrite(save_path, crop_bgr)
+                cv2.imwrite(save_path, crop_rgb)
                 
                 print(f"[{idx+1}/{total}] Processed: {img_name} (Center: {cx}, {cy})")
             else:

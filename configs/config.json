@@ -12,7 +12,7 @@
   "camera": {
     "reverse_x": true,
     "width": 1024,
-    "PixelFormat": "BGR8"
+    "PixelFormat": "RGB8"
   },
   "inference": {
     "first_model": "pose_two_cross_11n",
