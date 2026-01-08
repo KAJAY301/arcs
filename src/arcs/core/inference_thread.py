@@ -144,7 +144,7 @@ class InferenceThread(QThread):
         """
         return crop_padded
     
-    def find_cores_points(self, first_points_list, second_points_list):
+    def find_closest_points(self, first_points_list, second_points_list):
         if not first_points_list or not second_points_list:
             return None, None
         
@@ -176,7 +176,7 @@ class InferenceThread(QThread):
             coordinate = self.second_inference(img)
             first_points_list = coordinate[0]
             second_points_list = coordinate[1]
-            f_pt, s_pt = self.find_cores_points(first_points_list, second_points_list)
+            f_pt, s_pt = self.find_closest_points(first_points_list, second_points_list)
 
             data = {"first": f_pt, "second": s_pt}
 
