@@ -343,14 +343,14 @@ class main_ui(QMainWindow):
                 mm_per_pulses_y = load_env_config().get('motor_mm_per_pulse_y')
                 now = time.time() * 1000
                 if (now - self.last_send_time) > 500:     #only move every 500ms
-                    if dx_mm != 0 or dy_mm != 0:          #dx, dy: 1 = +,  2 = -
-                        dx, dy = 1, 1
+                    if dx_mm != 0 or dy_mm != 0:          #dx, dy: 1 = -,  2 = +
+                        dx, dy = 2, 2
                         if dx_mm < 0:
                             dx_mm *= -1
-                            dx = 2
+                            dx = 1
                         if dy_mm < 0:
                             dy_mm *= -1
-                            dy = 2
+                            dy = 1
 
                         pulses_x = int(dx_mm / mm_per_pulses_x)
                         pulses_y = int(dy_mm / mm_per_pulses_y)
