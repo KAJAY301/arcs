@@ -56,15 +56,6 @@ class main_ui(QMainWindow):
         self.plc_thread.status.connect(lambda m: self.status_bar.showMessage(f"PLC: {m}"))
         self.plc_thread.start()
 
-        #SAVE IMG NO MATCH FOLDER
-        self.save_dir = "data/no_match_img"
-        self.max_save_count = 500
-        self.last_save_time = 0      # 記錄上次存檔的時間戳
-        self.cooldown_seconds = 5    # 冷卻時間
-        if not os.path.exists(self.save_dir):
-            os.makedirs(self.save_dir)
-        self.current_save_count = len(os.listdir(self.save_dir))
-
     """    Initialization Functions    """
     def init_ui(self):
         # Header
@@ -373,17 +364,6 @@ class main_ui(QMainWindow):
             
             else:
                 self.status_bar.showMessage("No Match Found")
-                current_time = time.time()
-                if (current_time - self.last_save_time >= self.cooldown_seconds) and \
-                   (self.current_save_count < self.max_save_count):
-                    
-                    img = qimage_to_cv2(q_img)
-                    save_image_timed(img, base_path="data/no_match_img")
-                    
-                    # 更新狀態
-                    self.last_save_time = current_time
-                    self.current_save_count += 1
-                    print(f"目前負樣本數: {self.current_save_count}/500")
 
                 #save img to no_match folder
 

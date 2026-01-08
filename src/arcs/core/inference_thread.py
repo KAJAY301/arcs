@@ -1,12 +1,14 @@
-import numpy as np
 import cv2
+import os
+import numpy as np
 
+from time import time
 from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5.QtGui import QImage
 from ultralytics import YOLO
 from queue import Queue, Empty
 
-from arcs.utils.image_processor import cv2_to_qimage
+from arcs.utils.image_processor import cv2_to_qimage, save_image_timed
 
 class InferenceThread(QThread):
     """
@@ -25,6 +27,14 @@ class InferenceThread(QThread):
         #self.display_size = display_size
         self.running = True
         self.last_crop = None
+
+        self.save_dir = "data/no_match_img"
+        self.max_save_count = 500
+        self.last_save_time = 0
+        self.cooldown_seconds = 5
+        if not os.path.exists(self.save_dir):
+            os.makedirs(self.save_dir)
+        self.current_save_count = len(os.listdir(self.save_dir))
 
     def submit_frame(self, frame):
         if self.frame_q.full():
@@ -144,6 +154,17 @@ class InferenceThread(QThread):
         """
         return crop_padded
     
+    def save_img(self, img):
+        current_time = time.time()
+        if (current_time - self.last_save_time >= self.cooldown_seconds) and (self.current_save_count < self.max_save_count):
+            success = save_image_timed(img, base_path="data/no_match_img")
+            if success:
+                self.last_save_time = current_time
+                self.current_save_count += 1
+                print(f"[Saved] (Total: {self.current_save_count}/2000)")
+            else:
+                print(f"[Save Error]")
+
     def find_closest_points(self, first_points_list, second_points_list):
         if not first_points_list or not second_points_list:
             return None, None
@@ -170,16 +191,21 @@ class InferenceThread(QThread):
                 frame = self.frame_q.get(timeout=0.1)
             except Empty:
                 continue
-            
+
             cx, cy = self.first_inference(frame)
+            if cx is None or cy is None:
+                continue
+
             img = self.cut_img(frame, cx, cy, size_x=640, size_y=640)
             coordinate = self.second_inference(img)
             first_points_list = coordinate[0]
             second_points_list = coordinate[1]
+            if not first_points_list or not second_points_list:
+                self.save_img(img)
+                continue
+            
             f_pt, s_pt = self.find_closest_points(first_points_list, second_points_list)
-
             data = {"first": f_pt, "second": s_pt}
-
             q_img = cv2_to_qimage(img)
             self.last_crop = q_img
             img_to_send = q_img if q_img is not None else (self.last_crop if self.last_crop else QImage())
