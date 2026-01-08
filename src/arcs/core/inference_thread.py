@@ -203,9 +203,13 @@ class InferenceThread(QThread):
             if not first_points_list or not second_points_list:
                 self.save_img(img)
                 continue
-            
+
             f_pt, s_pt = self.find_closest_points(first_points_list, second_points_list)
             data = {"first": f_pt, "second": s_pt}
+
+            cv2.circle(img, f_pt, 2, (255, 255, 255), -1)
+            cv2.circle(img, s_pt, 2, (0, 0, 255), -1)
+
             q_img = cv2_to_qimage(img)
             self.last_crop = q_img
             img_to_send = q_img if q_img is not None else (self.last_crop if self.last_crop else QImage())

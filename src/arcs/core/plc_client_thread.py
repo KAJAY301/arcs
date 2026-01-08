@@ -19,25 +19,26 @@ class PLCClientThread(QThread):
 
     def connect_plc(self):
         #Try connect PLC
+        print("try to connect PLC...")
         try:
-            self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.client.settimeout(1)
-            self.client.connect((self.ip, self.port))
+            temp_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            temp_client.settimeout(1)
+            temp_client.connect((self.ip, self.port))
+            self.client = temp_client
             print("PLC Connected")
-        except socket.timeout:
-            self.error.emit("PLC Connect Timeout")
-            return False
-        except ConnectionRefusedError:
-            print("PLC Refuse Connect")
-            return False
-        except Exception as e:
-            print(f"Other Error: {e}")
+            return True
+        except (socket.timeout, ConnectionRefusedError, Exception) as e:
+            print(f"Connect fail: {e}")
+            # 確保失敗時 self.client 是 None
+            if 'temp_client' in locals():
+                temp_client.close()
+            self.client = None 
             return False
 
     def run(self):
         while self.running:
             # reconnect
-            if not self.client:
+            if self.client is None:
                 if not self.connect_plc():
                     time.sleep(2) # wait 2 sec if connect fail
                     continue
@@ -54,8 +55,10 @@ class PLCClientThread(QThread):
             except Exception as e:
                 self.error.emit(f"PLC Send Error: {e}")
                 # Send Error, force close to reconnect
-                try: self.client.close()
-                except: pass
+                if self.client:
+                    try: self.client.close()
+                    except: pass
+                self.client = None
 
         if self.client:
             self.client.close()

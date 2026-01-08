@@ -28,7 +28,6 @@ class Camera:
         )
         self.infer_thread.start()
 
-
     def open(self):
         """
         Open the camera connection.
@@ -76,13 +75,14 @@ class Camera:
             target_height= int((cm_value*10) / pixel_value)        #pixels
 
             try:
-                self.pylon_camera.PixelFormat.SetValue(camera_param.get('pixel_format'))
+                self.pylon_camera.PixelFormat.SetValue(camera_param.get('Pixel_format'))
                 self.pylon_camera.ReverseX.SetValue(camera_param.get('reverse_x'))
                 self.pylon_camera.Width.SetValue(camera_param.get('width'))
 
                 self.pylon_camera.AcquisitionLineRate.SetValue(line_rate_hz)
                 self.pylon_camera.ExposureTime.SetValue(exposure_us)
                 self.pylon_camera.Height.SetValue(target_height)
+
             except:
                 pass
         except Exception as e:
