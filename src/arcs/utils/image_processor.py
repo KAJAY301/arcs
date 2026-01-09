@@ -43,5 +43,5 @@ def save_image_timed(img, base_path="data/collected_samples/no_detection"):
         else:
             return False
 
-    except Exception as e:
-        return False, str(e)
+    except:
+        return False

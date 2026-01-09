@@ -8,13 +8,15 @@ from PyQt5.QtGui import QImage
 from ultralytics import YOLO
 from queue import Queue, Empty
 
+from arcs.utils.config_manager import load_env_config
 from arcs.utils.image_processor import cv2_to_qimage, save_image_timed
-
+from arcs.utils.data_processor import pixel_to_pulse
 class InferenceThread(QThread):
     """
     
     """
-    result_ready = pyqtSignal(dict, QImage)
+    result_img = pyqtSignal(QImage)
+    plc_command_signal = pyqtSignal(int, int, int, int)
 
     def __init__(self, first_model_path, second_model_path, conf_thresh, iou_thresh, display_size, parent=None):
         super().__init__(parent)
@@ -35,6 +37,15 @@ class InferenceThread(QThread):
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
         self.current_save_count = len(os.listdir(self.save_dir))
+
+        self.pixel_size = 0.035  # mm per pixel
+        self.mm_per_pulses_x = load_env_config().get('motor_mm_per_pulse_x')
+        self.mm_per_pulses_y = load_env_config().get('motor_mm_per_pulse_y')
+        self.deadband_mm = 1.0
+
+    def update_params(self, pixel_size, deadband_mm):
+        self.pixel_size = pixel_size
+        self.deadband_mm = deadband_mm
 
     def submit_frame(self, frame):
         if self.frame_q.full():
@@ -200,22 +211,39 @@ class InferenceThread(QThread):
             coordinate = self.second_inference(img)
             first_points_list = coordinate[0]
             second_points_list = coordinate[1]
-            if not first_points_list or not second_points_list:
+            if not first_points_list or not second_points_list:#or not Auto mode
                 self.save_img(img)
-                #continue
-
+                q_img = cv2_to_qimage(img)
+                self.result_img.emit(q_img)
+                continue
             f_pt, s_pt = self.find_closest_points(first_points_list, second_points_list)
+            if f_pt and s_pt:
+                dx, dy, px, py = pixel_to_pulse(
+                                    f_pt, s_pt, 
+                                    self.pixel_size, 
+                                    self.mm_per_pulses_x, 
+                                    self.mm_per_pulses_y, 
+                                    self.deadband_mm
+                                )
+                self.plc_command_signal.emit(dx, dy, px, py)
+
+                cv2.circle(img, f_pt, 2, (255, 255, 255), -1)
+                cv2.circle(img, s_pt, 2, (0, 0, 255), -1)
+
+            q_img = cv2_to_qimage(img)
+            self.result_img.emit(q_img)
+            """
             data = {"first": f_pt, "second": s_pt}
 
             cv2.circle(img, f_pt, 2, (255, 255, 255), -1)
             cv2.circle(img, s_pt, 2, (0, 0, 255), -1)
 
-            q_img = cv2_to_qimage(img)
+            
             self.last_crop = q_img
             img_to_send = q_img if q_img is not None else (self.last_crop if self.last_crop else QImage())
 
             self.result_ready.emit(data, img_to_send)
-    
+            """
     def stop(self):
         self.running = False
         self.wait()

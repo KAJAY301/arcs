@@ -43,8 +43,8 @@ class main_ui(QMainWindow):
 
         # Init Inference Thread
         self.infer_thread = self.camera.infer_thread
-        self.infer_thread.result_ready.connect(self.handle_inference_result)
-
+        self.infer_thread.result_img.connect(self.handle_inference_result)
+        
         # Init PLC Thread
         plc_cfg = load_env_config()
         self.plc_thread = PLCClientThread(
@@ -106,12 +106,6 @@ class main_ui(QMainWindow):
         self.length_cm_input.textChanged.connect(self.update_length_from_cm)
         self.length_inch_input.textChanged.connect(self.update_length_from_inch)
 
-        self.length_cm_input.textChanged.connect(self.sync_ui_to_camera)
-        self.length_inch_input.textChanged.connect(self.sync_ui_to_camera)
-        self.speed_input.textChanged.connect(self.sync_ui_to_camera)
-        self.pixel_input.textChanged.connect(self.sync_ui_to_camera)
-
-
             # Camera start/stop button
         self.start_btn = QPushButton("Start Camera")
         self.start_btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
@@ -159,11 +153,19 @@ class main_ui(QMainWindow):
         diraction_layout.addWidget(btn_down, 2, 1, 1, 2)
 
             # Apply congif value
+        self.length_cm_input.textChanged.connect(self.sync_ui_params)
+        self.length_inch_input.textChanged.connect(self.sync_ui_params)
+        self.speed_input.textChanged.connect(self.sync_ui_params)
+        self.pixel_input.textChanged.connect(self.sync_ui_params)
+        self.threshold_input.textChanged.connect(self.sync_ui_params)
+
         setting = self.cfg.get('setting', {})
         self.length_cm_input.setText(str(setting.get('length_cm')))
         self.speed_input.setText(str(setting.get('speed_m_min')))
         self.pixel_input.setText(str(setting.get('pixel_mm')))
         self.threshold_input.setText(str(setting.get('alarm_dist')))
+
+        
 
         # Main panel
         main_layout = QVBoxLayout(self.central_widget)
@@ -236,15 +238,25 @@ class main_ui(QMainWindow):
         except:
             pass
 
-    def sync_ui_to_camera(self):
+    def sync_ui_params(self):
+        try:
+            length_cm_input = float(self.length_cm_input.text())
+            speed_input = float(self.speed_input.text())
+            pixel_input = float(self.pixel_input.text())
+            threshold_input = float(self.threshold_input.text())
+        except ValueError:
+            pass
         try:
             ui_input = {
-                'length_cm_input': float(self.length_cm_input.text()),
-                'speed_input': float(self.speed_input.text()),
-                'pixel_input': float(self.pixel_input.text())
+                'length_cm_input': length_cm_input,
+                'speed_input': speed_input,
+                'pixel_input': pixel_input
             }
             self.camera.update_camera_params(ui_input)
-        except ValueError:
+            self.infer_thread.update_params(pixel_input, threshold_input)
+            #self.update_monitor_table()
+        except Exception as e:
+            print(f"Error syncing UI params: {e}")
             pass
 
     # Toggle
@@ -261,7 +273,7 @@ class main_ui(QMainWindow):
         else:
             try:
                 self.camera.open()
-                self.sync_ui_to_camera()
+                self.sync_ui_params()
                 self.camera.start_grabbing()
                 self.start_btn.setText("Stop Camera")
                 self.start_btn.setStyleSheet("background-color: #E03C3C;")
@@ -286,7 +298,7 @@ class main_ui(QMainWindow):
         mm_per_pulses_y = load_env_config().get('motor_mm_per_pulse_y')
         pulses_x = int(manual_move_mm / mm_per_pulses_x)
         pulses_y = int(manual_move_mm / mm_per_pulses_y)
-        dx, dy, px, py = 0, 0, 0, 0
+        dx, dy, px, py = 2, 2, 0, 0
 
         if   direction == "UP"   : 
             py = pulses_y
@@ -306,14 +318,14 @@ class main_ui(QMainWindow):
         #self.status_bar.showMessage(f"Manual: {direction}(next_seq:{self.next_seq}, px:{px}, py:{py})")
 
     # Something else
-    def handle_inference_result(self, data, q_img):
+    def handle_inference_result(self, q_img):
         if not q_img.isNull():
             self.img_label.setPixmap(QPixmap.fromImage(q_img))
-            """
+        """
             self.img_label.setPixmap(QPixmap.scaled(self.img_label.size(), 
                                                    Qt.KeepAspectRatio,
                                                    Qt.SmoothTransformation))
-            """
+            
         if self.is_detecting:
             f_pt = data.get('first')
             s_pt = data.get('second')
@@ -324,7 +336,7 @@ class main_ui(QMainWindow):
                 dy_mm = (s_pt[1] - f_pt[1]) * pixel_mm
                 #LogDock.update_plot(dx_mm, dy_mm)
 
-                """
+                
                 if abs(dx_mm) > alarm_dist or abs(dy_mm) > alarm_dist:
                     self.warning_label.show()
                     self.warning_image_label.show()
@@ -333,7 +345,7 @@ class main_ui(QMainWindow):
                 else:
                     self.warning_label.hide()
                     self.warning_image_label.hide()
-                """
+                
                 print(f"Offset[x:{round(dx_mm, 2)}, y:{round(dy_mm, 2)}]")
                 deadband_mm = float(self.threshold_input.text())
                 if abs(dx_mm) < deadband_mm: dx_mm = 0
@@ -361,6 +373,7 @@ class main_ui(QMainWindow):
                         if self.plc_thread.enqueue_move(dx, dy, pulses_x, pulses_y):
                             self.last_send_time = now
                             self.status_bar.showMessage(f"Auto: X={pulses_x} Y={pulses_y}")
+        
             
             else:
                 self.status_bar.showMessage("No Match Found")
@@ -369,6 +382,7 @@ class main_ui(QMainWindow):
 
                 #self.warning_label.hide()
                 #self.warning_image_label.hide()
+        """
 
     def on_plc_ack(self):
         pass

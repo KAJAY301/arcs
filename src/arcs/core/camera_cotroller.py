@@ -59,7 +59,7 @@ class Camera:
         """
         self.pylon_camera.Close()
 
-    def update_camera_params(self, ui_input: dict|None = None):
+    def update_camera_params(self, ui_input: dict):
         """
         Update camera parameters based on UI input and config.json.
         """

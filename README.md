@@ -5,7 +5,7 @@ python -m venv .venv
 **activate .venv**
 ```
 Set-ExecutionPolicy RemoteSigned -Scope Process
-.venv\Scripts\activate 
+.venv\Scripts\activate
 ```
 **dowwnload dependencies**
 ```

@@ -1,12 +1,13 @@
 import socket
+import struct
 
 from arcs.utils.config_manager import load_env_config
 
 class FX3U_PLC:
     def __init__(self):
         self.client = None
-        self.ip = load_env_config().get("PLC_IP")
-        self.port = load_env_config().get("PLC_PORT")
+        self.ip = load_env_config().get("plc_ip")
+        self.port = load_env_config().get("plc_port")
 
         self.is_connected = False
         self.is_running = False
@@ -16,20 +17,19 @@ class FX3U_PLC:
         Try connect PLC
         """
         try:
-            self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.client.settimeout(30)
-            self.client.connect((self.ip, self.port))
+            temp_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            temp_client.settimeout(1)
+            temp_client.connect((self.ip, self.port))
+            self.client = temp_client
             self.is_connected = True
             print("PLC Connected")
-        except socket.timeout:
-            print("PLC Connect Timeout")
-            return False
-        except ConnectionRefusedError:
-            print("PLC Refuse Connect")
-            return False
-        except Exception as e:
-            print(f"Other Error: {e}")
-            return False
+        except (socket.timeout, ConnectionRefusedError, Exception) as e:
+            print(f"Connect fail: {e}")
+            # 確保失敗時 self.client 是 None
+            if 'temp_client' in locals():
+                temp_client.close()
+            self.client = None 
+            self.is_connected = False
 
     def run(self):
         """
@@ -75,10 +75,24 @@ class FX3U_PLC:
                 pass
             self.client.close()
             self.is_connected = False
+            self.client = None
             print("PLC Disconnected")
 
-    def write(self):
-        pass
+    def write_D(self, D_start: int, D_point:int, values: list):
+        # write in register
+        data_to_write = b''
+        for val in values:
+            data_to_write += struct.pack('<H', val)
+        frame = b'\x03\xFF\x0A\x00\x64\x00\x00\x00\x20\x44\x04\x00' + data_to_write
+        try:
+            self.client.sendall(frame)
+            response = self.client.recv(1024)
+            if response == b'\x83\x00':
+                return True
+            else:
+                return False
+        except Exception as e:
+            raise e
 
     def read(self):
         pass
