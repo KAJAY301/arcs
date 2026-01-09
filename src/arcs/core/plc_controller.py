@@ -17,7 +17,7 @@ class FX3U_PLC:
         """
         try:
             self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.client.settimeout(1)
+            self.client.settimeout(30)
             self.client.connect((self.ip, self.port))
             self.is_connected = True
             print("PLC Connected")

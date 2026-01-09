@@ -40,7 +40,7 @@ class PLCClientThread(QThread):
             # reconnect
             if self.client is None:
                 if not self.connect_plc():
-                    time.sleep(2) # wait 2 sec if connect fail
+                    time.sleep(20) # wait 2 sec if connect fail
                     continue
 
             try:

@@ -29,7 +29,7 @@ class InferenceThread(QThread):
         self.last_crop = None
 
         self.save_dir = "data/no_match_img"
-        self.max_save_count = 500
+        self.max_save_count = 2000
         self.last_save_time = 0
         self.cooldown_seconds = 5
         if not os.path.exists(self.save_dir):
@@ -155,7 +155,7 @@ class InferenceThread(QThread):
         return crop_padded
     
     def save_img(self, img):
-        current_time = time.time()
+        current_time = time()
         if (current_time - self.last_save_time >= self.cooldown_seconds) and (self.current_save_count < self.max_save_count):
             success = save_image_timed(img, base_path="data/no_match_img")
             if success:
@@ -202,7 +202,7 @@ class InferenceThread(QThread):
             second_points_list = coordinate[1]
             if not first_points_list or not second_points_list:
                 self.save_img(img)
-                continue
+                #continue
 
             f_pt, s_pt = self.find_closest_points(first_points_list, second_points_list)
             data = {"first": f_pt, "second": s_pt}
