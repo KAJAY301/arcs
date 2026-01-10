@@ -31,7 +31,7 @@ class main_ui(QMainWindow):
 
         # Init Inference Thread
         self.infer_thread = self.camera.infer_thread
-        self.infer_thread.result_img.connect(self.handle_inference_result)
+        self.infer_thread.ui_signal.connect(self.handle_inference_result)
 
         #initial ui, media
         self.init_ui()
@@ -113,12 +113,12 @@ class main_ui(QMainWindow):
         self.monitor_dock.hide()
 
         # Log Dock
-        log_dock = LogDock(self)
-        log_dock.setAllowedAreas(Qt.BottomDockWidgetArea)
-        log_dock.setMaximumHeight(250)
-        self.addDockWidget(Qt.BottomDockWidgetArea, log_dock)
-        view_menu.addAction(log_dock.toggleViewAction())
-        log_dock.hide()
+        self.log_dock = LogDock(self)
+        self.log_dock.setAllowedAreas(Qt.BottomDockWidgetArea)
+        self.log_dock.setMaximumHeight(250)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.log_dock)
+        view_menu.addAction(self.log_dock.toggleViewAction())
+        self.log_dock.hide()
 
     def init_media(self):
         # image, ssound initializations
@@ -216,10 +216,12 @@ class main_ui(QMainWindow):
         if not q_img.isNull():
             self.img_label.setPixmap(QPixmap.fromImage(q_img))
         if data:
-            alarm_distance = 1#mm
+            self.log_dock.update_plot(data)
+            
+            alarm_distance = 0.5#mm
             dis_pix = math.dist(data[0], data[1])
             dis_mm = dis_pix * float(self.setting_dock.pixel_input.value())
-
+            
             should_alarm = dis_mm > alarm_distance
             if should_alarm != self.is_warning:
                 self.is_warning = should_alarm

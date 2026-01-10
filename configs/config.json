@@ -3,10 +3,10 @@
     "theme": "dark"
   },
   "setting": {
-    "length_cm": 21.51,
-    "speed_m_min": 49.0,
-    "pixel_mm": 0.04,
-    "alarm_dist": 0.4,
+    "length_cm": 20.0,
+    "speed_m_min": 50.0,
+    "pixel_mm": 0.045000000000000005,
+    "alarm_dist": 0.30000000000000004,
     "manual_move_mm": 1
   },
   "camera": {

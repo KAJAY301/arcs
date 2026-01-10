@@ -76,9 +76,7 @@ class SettingDock(QDockWidget):
         # Connect and Apply congif rule & values
         self.length_cm_input.textChanged.connect(self.update_length_from_cm)
         self.length_inch_input.textChanged.connect(self.update_length_from_inch)
-
-        self.length_cm_input.setButtonSymbols(1)
-
+        
         self.length_cm_input.setRange(0, 5000)
         self.length_inch_input.setRange(0, 5000)
         self.speed_input.setRange(0, 1000)
