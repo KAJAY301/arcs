@@ -8,15 +8,13 @@ from PyQt5.QtWidgets import (
     )
 from PyQt5.QtCore import Qt, QTimer, QEvent, QSize
 from PyQt5.QtGui import QPixmap
-from pypylon import pylon
 
 from arcs.ui.custom_title_bar import CustomTitleBar, title_bar_height
 from arcs.ui.log_dock import LogDock
 from arcs.ui.setting_dock import SettingDock
-from arcs.utils.image_processor import save_image_timed, qimage_to_cv2
-from arcs.utils.config_manager import load_model_path, load_env_config, load_json_config, save_json_config_atomic
+from arcs.ui.monitor_dock import MonitorDock
+from arcs.utils.config_manager import load_env_config, load_json_config, save_json_config_atomic
 from arcs.core.camera_cotroller import Camera
-from arcs.core.inference_thread import InferenceThread
 from arcs.core.plc_client_thread import PLCClientThread
 
 class main_ui(QMainWindow):
@@ -35,10 +33,11 @@ class main_ui(QMainWindow):
         #initial ui, media
         self.init_ui()
         self.init_media()
+        self.sync_ui_params()
 
         # Parameters initialization
-        self.last_send_time = 0
-        self.next_seq = 1
+        #self.last_send_time = 0
+        #self.next_seq = 1
         self.is_detecting = False
         self.initial_pos = None
 
@@ -81,9 +80,6 @@ class main_ui(QMainWindow):
         self.addDockWidget(Qt.LeftDockWidgetArea, self.setting_dock)
         view_menu.addAction(self.setting_dock.toggleViewAction())
 
-        self.setting_dock.length_cm_input.textChanged.connect(self.update_length_from_cm)
-        self.setting_dock.length_inch_input.textChanged.connect(self.update_length_from_inch)
-
         self.setting_dock.length_cm_input.editingFinished.connect(self.sync_ui_params)
         self.setting_dock.length_inch_input.editingFinished.connect(self.sync_ui_params)
         self.setting_dock.speed_input.editingFinished.connect(self.sync_ui_params)
@@ -98,99 +94,6 @@ class main_ui(QMainWindow):
         self.setting_dock.btn_left.clicked.connect(lambda: self.manual_direction("LEFT"))
         self.setting_dock.btn_right.clicked.connect(lambda: self.manual_direction("RIGHT"))
 
-        """
-        left_dock = QDockWidget("Setting", self)
-        left_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
-        left_widget = QWidget()
-        left_dock.setWidget(left_widget)
-        left_layout = QVBoxLayout(left_widget)
-        self.addDockWidget(Qt.LeftDockWidgetArea, left_dock)
-        view_menu.addAction(left_dock.toggleViewAction())
-            # Settings Area
-        setting_group = QWidget()
-        setting_layout = QGridLayout(setting_group)
-        left_layout.addWidget(setting_group, stretch=4)
-
-        setting_layout.addWidget(QLabel("Workpiece Length (cm):"), 0, 0)
-        self.length_cm_input = QLineEdit()
-        setting_layout.addWidget(self.length_cm_input, 0, 1)
-
-        setting_layout.addWidget(QLabel("Workpiece Length (inch):"), 1, 0)
-        self.length_inch_input = QLineEdit()
-        setting_layout.addWidget(self.length_inch_input, 1 ,1)
-
-        setting_layout.addWidget(QLabel("Workpiece Speed (m/min):"), 2, 0)
-        self.speed_input = QLineEdit()
-        setting_layout.addWidget(self.speed_input, 2, 1)
-
-        setting_layout.addWidget(QLabel("Pixel Size (mm):"), 3, 0)
-        self.pixel_input = QLineEdit()
-        setting_layout.addWidget(self.pixel_input, 3, 1)
-
-        self.length_cm_input.textChanged.connect(self.update_length_from_cm)
-        self.length_inch_input.textChanged.connect(self.update_length_from_inch)
-
-            # Camera start/stop button
-        self.start_btn = QPushButton("Start Camera")
-        self.start_btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        self.start_btn.clicked.connect(self.toggle_camera)
-        left_layout.addWidget(self.start_btn, stretch=2)
-
-            #Alarm panel
-        Alarm_widget = QWidget()
-        Alarm_layout = QGridLayout(Alarm_widget)
-        Alarm_layout.addWidget(QLabel("Alarm Distance (mm):       "), 0, 0)
-        self.threshold_input = QLineEdit()
-        Alarm_layout.addWidget(self.threshold_input, 0, 1)
-        left_layout.addWidget(Alarm_widget, stretch=1)
-
-            #Auto detect button
-        self.detect_btn = QPushButton("Start Detect")
-        self.detect_btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        self.detect_btn.setCheckable(True)
-        self.detect_btn.toggled.connect(self.toggle_detection)
-        left_layout.addWidget(self.detect_btn, stretch=2)
-
-            #manual PLC control buttons
-        diraction_widget = QWidget()
-        diraction_layout = QGridLayout(diraction_widget)
-        left_layout.addWidget(diraction_widget, stretch=6)
-
-        btn_up = QPushButton("Up")
-        btn_up.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        btn_up.clicked.connect(lambda: self.manual_direction("UP"))
-        diraction_layout.addWidget(btn_up, 0, 1, 1, 2)
-
-        btn_left = QPushButton("L")
-        btn_left.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        btn_left.clicked.connect(lambda: self.manual_direction("LEFT"))
-        diraction_layout.addWidget(btn_left, 1, 0, 1, 2)
-
-        btn_right = QPushButton("R")
-        btn_right.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        btn_right.clicked.connect(lambda: self.manual_direction("RIGHT"))
-        diraction_layout.addWidget(btn_right, 1, 2, 1, 2)
-
-        btn_down = QPushButton("Down")
-        btn_down.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        btn_down.clicked.connect(lambda: self.manual_direction("DOWN"))
-        diraction_layout.addWidget(btn_down, 2, 1, 1, 2)
-
-            # Apply congif value
-        self.length_cm_input.textChanged.connect(self.sync_ui_params)
-        self.length_inch_input.textChanged.connect(self.sync_ui_params)
-        self.speed_input.textChanged.connect(self.sync_ui_params)
-        self.pixel_input.textChanged.connect(self.sync_ui_params)
-        self.threshold_input.textChanged.connect(self.sync_ui_params)
-
-        setting = self.cfg.get('setting', {})
-        self.length_cm_input.setText(str(setting.get('length_cm')))
-        self.speed_input.setText(str(setting.get('speed_m_min')))
-        self.pixel_input.setText(str(setting.get('pixel_mm')))
-        self.threshold_input.setText(str(setting.get('alarm_dist')))
-        """
-        
-
         # Main panel
         main_layout = QVBoxLayout(self.central_widget)
         main_layout.setAlignment(Qt.AlignCenter)
@@ -202,31 +105,11 @@ class main_ui(QMainWindow):
         main_layout.addWidget(self.img_label, stretch=1)
 
         # Monitor Dock
-        monitor_dock = QDockWidget("Monitor", self)
-        monitor_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
-        self.addDockWidget(Qt.RightDockWidgetArea, monitor_dock)
-        view_menu.addAction(monitor_dock.toggleViewAction())
-        monitor_dock.hide()
-
-        self.monitor_table = QTableWidget(4, 2)
-        self.monitor_table.setFrameShape(QTableWidget.NoFrame)
-        self.monitor_table.verticalHeader().setVisible(False)
-        self.monitor_table.horizontalHeader().setVisible(False)
-        monitor_dock.setWidget(self.monitor_table)
-
-        self.monitor_table.setItem(0, 0, QTableWidgetItem("Parameter"))
-        self.monitor_table.setItem(0, 1, QTableWidgetItem("Value"))
-
-        self.monitor_table.setItem(1, 0, QTableWidgetItem("Line Rate"))
-        self.monitor_table.setItem(1, 1, QTableWidgetItem("None"))
-        self.monitor_table.setItem(2, 0, QTableWidgetItem("Exposure Time"))
-        self.monitor_table.setItem(2, 1, QTableWidgetItem("None"))
-        self.monitor_table.setItem(3, 0, QTableWidgetItem("Height"))
-        self.monitor_table.setItem(3, 1, QTableWidgetItem("None"))
-        self.monitor_table.setItem(4, 0, QTableWidgetItem("Width"))
-        self.monitor_table.setItem(4, 1, QTableWidgetItem("None"))
-
-        self.monitor_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch) 
+        self.monitor_dock = MonitorDock(self)
+        self.monitor_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.monitor_dock)
+        view_menu.addAction(self.monitor_dock.toggleViewAction())
+        self.monitor_dock.hide()
 
         # Log Dock
         log_dock = LogDock(self)
@@ -277,7 +160,9 @@ class main_ui(QMainWindow):
                 'pixel_input': pixel_input
             }
             self.camera.update_camera_params(ui_input)
+            self.monitor_dock.update_params(ui_input)
             self.infer_thread.update_params(pixel_input, threshold_input)
+            
             #self.update_monitor_table()
         except Exception as e:
             print(f"Error syncing UI params: {e}")
@@ -290,7 +175,6 @@ class main_ui(QMainWindow):
                 self.camera.stop_grabbing()
                 self.camera.close()
                 self.setting_dock.start_btn.setText("Start Camera")
-                self.setting_dock.start_btn.setStyleSheet("background-color: #4CAF50;")
                 self.status_bar.showMessage("Camera Stopped")
             except Exception as e:
                 QMessageBox.critical(self, "Camera Stop Failed", str(e))
@@ -300,7 +184,6 @@ class main_ui(QMainWindow):
                 self.sync_ui_params()
                 self.camera.start_grabbing()
                 self.setting_dock.start_btn.setText("Stop Camera")
-                self.setting_dock.start_btn.setStyleSheet("background-color: #E03C3C;")
                 self.status_bar.showMessage("Camera Running")
             except Exception as e:
                 QMessageBox.critical(self, "Camera Init Failed", str(e))
@@ -309,14 +192,10 @@ class main_ui(QMainWindow):
         self.is_detecting = checked
         if checked:
             self.setting_dock.detect_btn.setText("Stop Detect")
-            self.setting_dock.detect_btn.setStyleSheet("background-color: #E03C3C;")
             self.infer_thread.is_detacting = True
         else:
             self.setting_dock.detect_btn.setText("Start Detect")
-            self.setting_dock.detect_btn.setStyleSheet("background-color: #4CAF50;")
             self.infer_thread.is_detacting = False
-            #self.warning_label.hide()
-            #self.warning_image_label.hide()
 
     def manual_direction(self, direction):
         manual_move_mm = self.cfg.get('setting', {}).get('manual_move_mm')

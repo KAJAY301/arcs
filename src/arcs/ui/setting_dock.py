@@ -35,6 +35,7 @@ class SettingDock(QDockWidget):
         # Camera start/stop button
         self.start_btn = QPushButton("Start Camera")
         self.start_btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.start_btn.setCheckable(True)
         left_layout.addWidget(self.start_btn, stretch=2)
 
         # Alarm panel
