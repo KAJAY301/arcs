@@ -130,10 +130,10 @@ class main_ui(QMainWindow):
     # Update
     def sync_ui_params(self):
         try:
-            length_cm_input = float(self.setting_dock.length_cm_input.text())
-            speed_input = float(self.setting_dock.speed_input.text())
-            pixel_input = float(self.setting_dock.pixel_input.text())
-            threshold_input = float(self.setting_dock.threshold_input.text())
+            length_cm_input = float(self.setting_dock.length_cm_input.value())
+            speed_input = float(self.setting_dock.speed_input.value())
+            pixel_input = float(self.setting_dock.pixel_input.value())
+            threshold_input = float(self.setting_dock.threshold_input.value())
         except ValueError:
             pass
         try:
@@ -220,7 +220,7 @@ class main_ui(QMainWindow):
         if data:
             alarm_distance = 0.4#mm
             dis_pix = math.dist(data[0], data[1])
-            dis_mm = dis_pix * float(self.setting_dock.pixel_input.text())
+            dis_mm = dis_pix * float(self.setting_dock.pixel_input.value())
 
             should_alarm = dis_mm > alarm_distance
             if should_alarm != self.is_warning:
@@ -295,9 +295,9 @@ class main_ui(QMainWindow):
         cfg = self.cfg.copy()
         try:
             cfg.setdefault("setting", {})
-            cfg["setting"]["length_cm"] = float(self.length_cm_input.text())
-            cfg["setting"]["speed_m_min"] = float(self.speed_input.text())
-            cfg["setting"]["pixel_mm"] = float(self.pixel_input.text())
-            cfg["setting"]["alarm_dist"] = float(self.threshold_input.text())
+            cfg["setting"]["length_cm"] = float(self.setting_dock.length_cm_input.value())
+            cfg["setting"]["speed_m_min"] = float(self.setting_dock.speed_input.value())
+            cfg["setting"]["pixel_mm"] = float(self.setting_dock.pixel_input.value())
+            cfg["setting"]["alarm_dist"] = float(self.setting_dock.threshold_input.value())
         except:
             pass

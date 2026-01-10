@@ -90,3 +90,20 @@ QTableView::item:selected {
             background-color: #555555;
             color: #ffffff;
 }
+
+
+QSpinBox, QDoubleSpinBox {
+    background-color: #3c3f41;
+    border: 1px solid #5c5f61;
+    border-radius: 4px;
+    padding: 4px;
+    padding-right: 30px;
+    color: #ffffff;
+}
+
+QSpinBox::up-button, QDoubleSpinBox::up-button,
+QSpinBox::down-button, QDoubleSpinBox::down-button {
+    width: 30px;
+}
+
+
