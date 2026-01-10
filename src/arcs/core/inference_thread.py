@@ -15,7 +15,7 @@ class InferenceThread(QThread):
     """
     
     """
-    result_img = pyqtSignal(QImage)
+    result_img = pyqtSignal(QImage, list)
     plc_command_signal = pyqtSignal(int, int, int, int)
 
     def __init__(self, first_model_path, second_model_path, conf_thresh, iou_thresh, display_size, parent=None):
@@ -216,7 +216,7 @@ class InferenceThread(QThread):
             if not first_points_list or not second_points_list or not self.is_detacting:
                 self.save_img(img)
                 q_img = cv2_to_qimage(img)
-                self.result_img.emit(q_img)
+                self.result_img.emit(q_img, [])
                 continue
             f_pt, s_pt = self.find_closest_points(first_points_list, second_points_list)
             if f_pt and s_pt:
@@ -233,7 +233,7 @@ class InferenceThread(QThread):
                 cv2.circle(img, s_pt, 2, (0, 0, 255), -1)
 
             q_img = cv2_to_qimage(img)
-            self.result_img.emit(q_img)
+            self.result_img.emit(q_img, [f_pt, s_pt])
             """
             data = {"first": f_pt, "second": s_pt}
 

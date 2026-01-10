@@ -1,5 +1,6 @@
 import time
 import os
+import math
 
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QDockWidget, QVBoxLayout, QGridLayout, 
@@ -30,6 +31,10 @@ class main_ui(QMainWindow):
         # Camera Setup
         self.camera = Camera()
 
+        # Init Inference Thread
+        self.infer_thread = self.camera.infer_thread
+        self.infer_thread.result_img.connect(self.handle_inference_result)
+
         #initial ui, media
         self.init_ui()
         self.init_media()
@@ -38,12 +43,11 @@ class main_ui(QMainWindow):
         # Parameters initialization
         #self.last_send_time = 0
         #self.next_seq = 1
+        self.is_warning = False
         self.is_detecting = False
         self.initial_pos = None
 
-        # Init Inference Thread
-        self.infer_thread = self.camera.infer_thread
-        self.infer_thread.result_img.connect(self.handle_inference_result)
+        
         
         # Init PLC Thread
         plc_cfg = load_env_config()
@@ -51,7 +55,6 @@ class main_ui(QMainWindow):
             ip = plc_cfg.get("plc_ip"), 
             port = plc_cfg.get("plc_port")
         )
-        self.plc_thread.ack_received.connect(self.on_plc_ack)
         self.plc_thread.error.connect(lambda m: self.status_bar.showMessage(f"PLC ERR: {m}"))
         self.plc_thread.status.connect(lambda m: self.status_bar.showMessage(f"PLC: {m}"))
         self.plc_thread.start()
@@ -101,7 +104,7 @@ class main_ui(QMainWindow):
         self.img_label = QLabel("Camera Feed")
         self.img_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.img_label.setAlignment(Qt.AlignCenter)
-        self.img_label.setStyleSheet("background-color: #000000; border: 2px solid #555555;")
+        self.img_label.setStyleSheet("background-color: #000000; border: 2px solid #222222;")
         main_layout.addWidget(self.img_label, stretch=1)
 
         # Monitor Dock
@@ -125,26 +128,6 @@ class main_ui(QMainWindow):
 
     """    Logic Functions    """
     # Update
-    def update_length_from_cm(self):
-        try:
-            cm_value = float(self.setting_dock.length_cm_input.text())
-            inch_value = cm_value * 0.3937
-            self.setting_dock.length_inch_input.blockSignals(True)
-            self.setting_dock.length_inch_input.setText(f"{inch_value:.2f}")
-            self.setting_dock.length_inch_input.blockSignals(False)
-        except:
-            pass
-
-    def update_length_from_inch(self):
-        try:
-            inch_value = float(self.setting_dock.length_inch_input.text())
-            cm_value = inch_value * 2.54
-            self.setting_dock.length_cm_input.blockSignals(True)
-            self.setting_dock.length_cm_input.setText(f"{cm_value:.2f}")
-            self.setting_dock.length_cm_input.blockSignals(False)
-        except:
-            pass
-
     def sync_ui_params(self):
         try:
             length_cm_input = float(self.setting_dock.length_cm_input.text())
@@ -220,78 +203,29 @@ class main_ui(QMainWindow):
             dx = 1
 
         self.plc_thread.enqueue_move(dx, dy, px, py)
-        #self.next_seq += 1
-        #self.status_bar.showMessage(f"Manual: {direction}(next_seq:{self.next_seq}, px:{px}, py:{py})")
 
-    # Something else
-    def handle_inference_result(self, q_img):
+    def toggle_warning(self, is_alarm:bool):
+        if is_alarm:
+            #alarm
+            self.img_label.setStyleSheet("border: 10px solid #E03C3C;")
+            #can add alarm sound
+        else:
+            #normal
+            self.img_label.setStyleSheet("background-color: #000000; border: 10px solid #222222;")
+
+    # Inference result
+    def handle_inference_result(self, q_img, data):
         if not q_img.isNull():
             self.img_label.setPixmap(QPixmap.fromImage(q_img))
-        """
-            self.img_label.setPixmap(QPixmap.scaled(self.img_label.size(), 
-                                                   Qt.KeepAspectRatio,
-                                                   Qt.SmoothTransformation))
-            
-        if self.is_detecting:
-            f_pt = data.get('first')
-            s_pt = data.get('second')
+        if data:
+            alarm_distance = 0.4#mm
+            dis_pix = math.dist(data[0], data[1])
+            dis_mm = dis_pix * float(self.setting_dock.pixel_input.text())
 
-            if f_pt and s_pt:
-                pixel_mm = float(self.pixel_input.text())
-                dx_mm = (s_pt[0] - f_pt[0]) * pixel_mm
-                dy_mm = (s_pt[1] - f_pt[1]) * pixel_mm
-                #LogDock.update_plot(dx_mm, dy_mm)
-
-                
-                if abs(dx_mm) > alarm_dist or abs(dy_mm) > alarm_dist:
-                    self.warning_label.show()
-                    self.warning_image_label.show()
-                    if not self.alert_sound.isPlaying():
-                        self.alert_sound.play()
-                else:
-                    self.warning_label.hide()
-                    self.warning_image_label.hide()
-                
-                print(f"Offset[x:{round(dx_mm, 2)}, y:{round(dy_mm, 2)}]")
-                deadband_mm = float(self.threshold_input.text())
-                if abs(dx_mm) < deadband_mm: dx_mm = 0
-                if abs(dy_mm) < deadband_mm: dy_mm = 0
-
-                mm_per_pulses_x = load_env_config().get('motor_mm_per_pulse_x')
-                mm_per_pulses_y = load_env_config().get('motor_mm_per_pulse_y')
-                now = time.time() * 1000
-                if (now - self.last_send_time) > 500:     #only move every 500ms
-                    if dx_mm != 0 or dy_mm != 0:          #dx, dy: 1 = -,  2 = +
-                        dx, dy = 2, 2
-                        if dx_mm < 0:
-                            dx_mm *= -1
-                            dx = 1
-                        if dy_mm < 0:
-                            dy_mm *= -1
-                            dy = 1
-
-                        pulses_x = int(dx_mm / mm_per_pulses_x)
-                        pulses_y = int(dy_mm / mm_per_pulses_y)
-                        
-                        pulses_x = min(32767, pulses_x)
-                        pulses_y = min(32767, pulses_y)
-                        #print(f"PLC[dx:{dx}, dy:{dy}, x:{pulses_x}, y:{pulses_y}]")
-                        if self.plc_thread.enqueue_move(dx, dy, pulses_x, pulses_y):
-                            self.last_send_time = now
-                            self.status_bar.showMessage(f"Auto: X={pulses_x} Y={pulses_y}")
-        
-            
-            else:
-                self.status_bar.showMessage("No Match Found")
-
-                #save img to no_match folder
-
-                #self.warning_label.hide()
-                #self.warning_image_label.hide()
-        """
-
-    def on_plc_ack(self):
-        pass
+            should_alarm = dis_mm > alarm_distance
+            if should_alarm != self.is_warning:
+                self.is_warning = should_alarm
+                self.toggle_warning(should_alarm)
 
     # Event
     def keyPressEvent(self, event):

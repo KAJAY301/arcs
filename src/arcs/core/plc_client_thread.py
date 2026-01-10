@@ -8,7 +8,6 @@ from arcs.core.camera_cotroller import Camera
 from arcs.core.plc_controller import FX3U_PLC
 
 class PLCClientThread(QThread):
-    ack_received = pyqtSignal(dict)
     error = pyqtSignal(str)
     status = pyqtSignal(str)
 
