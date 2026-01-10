@@ -6,6 +6,7 @@ from arcs.utils.config_manager import load_json_config, load_model_path
 
 class Camera:
     def __init__(self):
+        self.is_opened = False
         self.is_running = False
         self.pylon_camera = None
         self.cfg = load_json_config()
@@ -35,6 +36,7 @@ class Camera:
         factory = pylon.TlFactory.GetInstance()
         self.pylon_camera = pylon.InstantCamera(factory.CreateFirstDevice())
         self.pylon_camera.Open()
+        self.is_opened = True
 
     def start_grabbing(self):
         """
@@ -58,6 +60,7 @@ class Camera:
         Close the camera connection.
         """
         self.pylon_camera.Close()
+        self.is_opened = False
 
     def update_camera_params(self, ui_input: dict):
         """

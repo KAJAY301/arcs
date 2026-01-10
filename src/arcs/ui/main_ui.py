@@ -170,17 +170,18 @@ class main_ui(QMainWindow):
 
     # Toggle
     def toggle_camera(self):
+        if not self.camera.is_opened:
+            self.camera.open()
+
         if self.camera.is_running:
             try:
                 self.camera.stop_grabbing()
-                self.camera.close()
                 self.setting_dock.start_btn.setText("Start Camera")
                 self.status_bar.showMessage("Camera Stopped")
             except Exception as e:
                 QMessageBox.critical(self, "Camera Stop Failed", str(e))
         else:
             try:
-                self.camera.open()
                 self.sync_ui_params()
                 self.camera.start_grabbing()
                 self.setting_dock.start_btn.setText("Stop Camera")
@@ -351,11 +352,9 @@ class main_ui(QMainWindow):
         self.infer_thread.stop()
         self.plc_thread.stop()
         if self.camera.is_running:
-            try: 
-                self.camera.stop_grabbing()
-                self.camera.close()
-            except:
-                pass
+            self.camera.stop_grabbing()
+        if self.camera.is_opened:
+            self.camera.close()
         event.accept()
 
     def read_ui_to_cfg(self):
