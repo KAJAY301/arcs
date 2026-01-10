@@ -1,13 +1,11 @@
-import time
-import os
 import math
 
 from PyQt5.QtWidgets import (
-    QMainWindow, QWidget, QDockWidget, QVBoxLayout, QGridLayout, 
-    QLabel, QLineEdit, QPushButton, QSizePolicy, QMessageBox, 
-    QTableWidget, QTableWidgetItem, QHeaderView
+    QMainWindow, QWidget, QVBoxLayout, 
+    QLabel, QSizePolicy, QMessageBox, 
+    QSpinBox, QDoubleSpinBox, QLineEdit
     )
-from PyQt5.QtCore import Qt, QTimer, QEvent, QSize
+from PyQt5.QtCore import Qt, QEvent
 from PyQt5.QtGui import QPixmap
 
 from arcs.ui.custom_title_bar import CustomTitleBar, title_bar_height
@@ -218,7 +216,7 @@ class main_ui(QMainWindow):
         if not q_img.isNull():
             self.img_label.setPixmap(QPixmap.fromImage(q_img))
         if data:
-            alarm_distance = 0.4#mm
+            alarm_distance = 1#mm
             dis_pix = math.dist(data[0], data[1])
             dis_mm = dis_pix * float(self.setting_dock.pixel_input.value())
 
@@ -241,6 +239,9 @@ class main_ui(QMainWindow):
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
             self.initial_pos = event.pos()
+        focused_widget = self.focusWidget()
+        if isinstance(focused_widget, (QSpinBox, QDoubleSpinBox, QLineEdit)):
+            focused_widget.clearFocus()
         super().mousePressEvent(event)
         event.accept()
 
