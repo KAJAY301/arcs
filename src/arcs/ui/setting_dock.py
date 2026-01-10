@@ -1,17 +1,12 @@
 from PyQt5.QtWidgets import (
-    QMainWindow, QWidget, QDockWidget, QVBoxLayout, QGridLayout, 
-    QLabel, QLineEdit, QPushButton, QSizePolicy, QMessageBox, 
-    QTableWidget, QTableWidgetItem, QHeaderView
+    QWidget, QDockWidget, QVBoxLayout, QGridLayout, 
+    QLabel, QLineEdit, QPushButton, QSizePolicy
     )
-from PyQt5.QtCore import Qt, QEvent, QThread, pyqtSignal
-from PyQt5.QtGui import QPixmap
-from arcs.utils.config_manager import load_env_config, load_json_config
+from arcs.utils.config_manager import load_json_config
 
 class SettingDock(QDockWidget):
     def __init__(self, parent=None):
         super().__init__("Setting", parent)
-        self.cfg = load_json_config()
-
         left_widget = QWidget()
         self.setWidget(left_widget)
         left_layout = QVBoxLayout(left_widget)
@@ -40,7 +35,6 @@ class SettingDock(QDockWidget):
         # Camera start/stop button
         self.start_btn = QPushButton("Start Camera")
         self.start_btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        #self.start_btn.clicked.connect(self.on_camera_btn_clicked)
         left_layout.addWidget(self.start_btn, stretch=2)
 
         # Alarm panel
@@ -55,7 +49,6 @@ class SettingDock(QDockWidget):
         self.detect_btn = QPushButton("Start Detect")
         self.detect_btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.detect_btn.setCheckable(True)
-        #self.detect_btn.toggled.connect(self.on_detection_btn_clicked)
         left_layout.addWidget(self.detect_btn, stretch=2)
 
         # Manual PLC control buttons
@@ -65,40 +58,50 @@ class SettingDock(QDockWidget):
 
         self.btn_up = QPushButton("Up")
         self.btn_up.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        #self.btn_up.clicked.connect(lambda: self.manual_direction("UP"))
         diraction_layout.addWidget(self.btn_up, 0, 1, 1, 2)
 
         self.btn_left = QPushButton("L")
         self.btn_left.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        #self.btn_left.clicked.connect(lambda: self.manual_direction("LEFT"))
         diraction_layout.addWidget(self.btn_left, 1, 0, 1, 2)
 
         self.btn_right = QPushButton("R")
         self.btn_right.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        #self.btn_right.clicked.connect(lambda: self.manual_direction("RIGHT"))
         diraction_layout.addWidget(self.btn_right, 1, 2, 1, 2)
 
         self.btn_down = QPushButton("Down")
         self.btn_down.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        #self.btn_down.clicked.connect(lambda: self.manual_direction("DOWN"))
         diraction_layout.addWidget(self.btn_down, 2, 1, 1, 2)
 
-        # Apply congif value
-        """
+        # Connect and Apply congif values
         self.length_cm_input.textChanged.connect(self.update_length_from_cm)
         self.length_inch_input.textChanged.connect(self.update_length_from_inch)
 
-        self.length_cm_input.editingFinished.connect(self.emit_params)
-        self.length_inch_input.editingFinished.connect(self.emit_params)
-        self.speed_input.editingFinished.connect(self.emit_params)
-        self.pixel_input.editingFinished.connect(self.emit_params)
-        self.threshold_input.editingFinished.connect(self.emit_params)
-        """
+        self.cfg = load_json_config()
         setting = self.cfg.get('setting', {})
         self.length_cm_input.setText(str(setting.get('length_cm')))
         self.speed_input.setText(str(setting.get('speed_m_min')))
         self.pixel_input.setText(str(setting.get('pixel_mm')))
         self.threshold_input.setText(str(setting.get('alarm_dist')))
+
+    def update_length_from_cm(self):
+        try:
+            cm_value = float(self.length_cm_input.text())
+            inch_value = cm_value * 0.3937
+            self.length_inch_input.blockSignals(True)
+            self.length_inch_input.setText(f"{inch_value:.2f}")
+            self.length_inch_input.blockSignals(False)
+        except:
+            pass
+
+    def update_length_from_inch(self):
+        try:
+            inch_value = float(self.length_inch_input.text())
+            cm_value = inch_value * 2.54
+            self.length_cm_input.blockSignals(True)
+            self.length_cm_input.setText(f"{cm_value:.2f}")
+            self.length_cm_input.blockSignals(False)
+        except:
+            pass
 
 
 
