@@ -43,6 +43,8 @@ class InferenceThread(QThread):
         self.mm_per_pulses_y = load_env_config().get('motor_mm_per_pulse_y')
         self.deadband_mm = 1.0
 
+        self.is_detacting = False
+
     def update_params(self, pixel_size, deadband_mm):
         self.pixel_size = pixel_size
         self.deadband_mm = deadband_mm
@@ -211,7 +213,7 @@ class InferenceThread(QThread):
             coordinate = self.second_inference(img)
             first_points_list = coordinate[0]
             second_points_list = coordinate[1]
-            if not first_points_list or not second_points_list:#or not Auto mode
+            if not first_points_list or not second_points_list or not self.is_detacting:
                 self.save_img(img)
                 q_img = cv2_to_qimage(img)
                 self.result_img.emit(q_img)

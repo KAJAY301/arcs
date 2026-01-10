@@ -12,6 +12,7 @@ from pypylon import pylon
 
 from arcs.ui.custom_title_bar import CustomTitleBar, title_bar_height
 from arcs.ui.log_dock import LogDock
+from arcs.ui.setting_dock import SettingDock
 from arcs.utils.image_processor import save_image_timed, qimage_to_cv2
 from arcs.utils.config_manager import load_model_path, load_env_config, load_json_config, save_json_config_atomic
 from arcs.core.camera_cotroller import Camera
@@ -75,6 +76,29 @@ class main_ui(QMainWindow):
         self.status_bar.showMessage("Ready")
 
         # Left Dock Widget
+        self.setting_dock = SettingDock(self)
+        self.setting_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.setting_dock)
+        view_menu.addAction(self.setting_dock.toggleViewAction())
+
+        self.setting_dock.length_cm_input.textChanged.connect(self.update_length_from_cm)
+        self.setting_dock.length_inch_input.textChanged.connect(self.update_length_from_inch)
+
+        self.setting_dock.length_cm_input.editingFinished.connect(self.sync_ui_params)
+        self.setting_dock.length_inch_input.editingFinished.connect(self.sync_ui_params)
+        self.setting_dock.speed_input.editingFinished.connect(self.sync_ui_params)
+        self.setting_dock.pixel_input.editingFinished.connect(self.sync_ui_params)
+        self.setting_dock.threshold_input.editingFinished.connect(self.sync_ui_params)
+
+        self.setting_dock.start_btn.clicked.connect(self.toggle_camera)
+        self.setting_dock.detect_btn.toggled.connect(self.toggle_detection)
+        
+        self.setting_dock.btn_up.clicked.connect(lambda: self.manual_direction("UP"))
+        self.setting_dock.btn_down.clicked.connect(lambda: self.manual_direction("DOWN"))
+        self.setting_dock.btn_left.clicked.connect(lambda: self.manual_direction("LEFT"))
+        self.setting_dock.btn_right.clicked.connect(lambda: self.manual_direction("RIGHT"))
+
+        """
         left_dock = QDockWidget("Setting", self)
         left_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
         left_widget = QWidget()
@@ -164,7 +188,7 @@ class main_ui(QMainWindow):
         self.speed_input.setText(str(setting.get('speed_m_min')))
         self.pixel_input.setText(str(setting.get('pixel_mm')))
         self.threshold_input.setText(str(setting.get('alarm_dist')))
-
+        """
         
 
         # Main panel
@@ -220,30 +244,30 @@ class main_ui(QMainWindow):
     # Update
     def update_length_from_cm(self):
         try:
-            cm_value = float(self.length_cm_input.text())
+            cm_value = float(self.setting_dock.length_cm_input.text())
             inch_value = cm_value * 0.3937
-            self.length_inch_input.blockSignals(True)
-            self.length_inch_input.setText(f"{inch_value:.2f}")
-            self.length_inch_input.blockSignals(False)
+            self.setting_dock.length_inch_input.blockSignals(True)
+            self.setting_dock.length_inch_input.setText(f"{inch_value:.2f}")
+            self.setting_dock.length_inch_input.blockSignals(False)
         except:
             pass
 
     def update_length_from_inch(self):
         try:
-            inch_value = float(self.length_inch_input.text())
+            inch_value = float(self.setting_dock.length_inch_input.text())
             cm_value = inch_value * 2.54
-            self.length_cm_input.blockSignals(True)
-            self.length_cm_input.setText(f"{cm_value:.2f}")
-            self.length_cm_input.blockSignals(False)
+            self.setting_dock.length_cm_input.blockSignals(True)
+            self.setting_dock.length_cm_input.setText(f"{cm_value:.2f}")
+            self.setting_dock.length_cm_input.blockSignals(False)
         except:
             pass
 
     def sync_ui_params(self):
         try:
-            length_cm_input = float(self.length_cm_input.text())
-            speed_input = float(self.speed_input.text())
-            pixel_input = float(self.pixel_input.text())
-            threshold_input = float(self.threshold_input.text())
+            length_cm_input = float(self.setting_dock.length_cm_input.text())
+            speed_input = float(self.setting_dock.speed_input.text())
+            pixel_input = float(self.setting_dock.pixel_input.text())
+            threshold_input = float(self.setting_dock.threshold_input.text())
         except ValueError:
             pass
         try:
@@ -265,8 +289,8 @@ class main_ui(QMainWindow):
             try:
                 self.camera.stop_grabbing()
                 self.camera.close()
-                self.start_btn.setText("Start Camera")
-                self.start_btn.setStyleSheet("background-color: #4CAF50;")
+                self.setting_dock.start_btn.setText("Start Camera")
+                self.setting_dock.start_btn.setStyleSheet("background-color: #4CAF50;")
                 self.status_bar.showMessage("Camera Stopped")
             except Exception as e:
                 QMessageBox.critical(self, "Camera Stop Failed", str(e))
@@ -275,8 +299,8 @@ class main_ui(QMainWindow):
                 self.camera.open()
                 self.sync_ui_params()
                 self.camera.start_grabbing()
-                self.start_btn.setText("Stop Camera")
-                self.start_btn.setStyleSheet("background-color: #E03C3C;")
+                self.setting_dock.start_btn.setText("Stop Camera")
+                self.setting_dock.start_btn.setStyleSheet("background-color: #E03C3C;")
                 self.status_bar.showMessage("Camera Running")
             except Exception as e:
                 QMessageBox.critical(self, "Camera Init Failed", str(e))
@@ -284,11 +308,13 @@ class main_ui(QMainWindow):
     def toggle_detection(self, checked):
         self.is_detecting = checked
         if checked:
-            self.detect_btn.setText("Stop Detect")
-            self.detect_btn.setStyleSheet("background-color: #E03C3C;")
+            self.setting_dock.detect_btn.setText("Stop Detect")
+            self.setting_dock.detect_btn.setStyleSheet("background-color: #E03C3C;")
+            self.infer_thread.is_detacting = True
         else:
-            self.detect_btn.setText("Start Detect")
-            self.detect_btn.setStyleSheet("background-color: #4CAF50;")
+            self.setting_dock.detect_btn.setText("Start Detect")
+            self.setting_dock.detect_btn.setStyleSheet("background-color: #4CAF50;")
+            self.infer_thread.is_detacting = False
             #self.warning_label.hide()
             #self.warning_image_label.hide()
 
