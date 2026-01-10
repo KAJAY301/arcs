@@ -73,7 +73,7 @@ class SettingDock(QDockWidget):
         self.btn_down.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         diraction_layout.addWidget(self.btn_down, 2, 1, 1, 2)
 
-        # Connect and Apply congif values
+        # Connect and Apply congif rule & values
         self.length_cm_input.textChanged.connect(self.update_length_from_cm)
         self.length_inch_input.textChanged.connect(self.update_length_from_inch)
 
