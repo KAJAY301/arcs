@@ -5,27 +5,30 @@ import numpy as np
 from datetime import datetime
 from PyQt5.QtGui import QImage
 
-
-
 def qimage_to_cv2(q_img):
+    """
+    Convert from QImage to an OpenCV image
+    """
     q_img = q_img.convertToFormat(QImage.Format_RGB888)
     width = q_img.width()
     height = q_img.height()
     ptr = q_img.bits()
     ptr.setsize(height * width * 3)
     arr = np.frombuffer(ptr, np.uint8).reshape((height, width, 3))
-    #cv_img = cv2.cvtColor(arr, cv2.COLOR_RGB2BGR)
     return arr.copy()
 
 def cv2_to_qimage(cv_img):
-    #cv_img_rgb = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
+    """
+    Convert from an OpenCV image to QImage
+    """
     h, w, ch = cv_img.shape
     bytes_per_line = ch * w
     return QImage(cv_img.data, w, h, bytes_per_line, QImage.Format_RGB888).copy()
 
-def save_image_timed(img, base_path="data/collected_samples/no_detection"):
+def save_image_timed(img, base_path):
     """
-    save image, name: yymmddHHMMSS.jpg
+    Save image\n
+    name: yymmddHHMMSS.jpg
     """
     try:
         if not os.path.exists(base_path):

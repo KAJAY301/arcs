@@ -57,7 +57,7 @@ class main_ui(QMainWindow):
         self.plc_thread.status.connect(lambda m: self.status_bar.showMessage(f"PLC: {m}"))
         self.plc_thread.start()
 
-    """    Initialization Functions    """
+
     def init_ui(self):
         # Header
         self.header = CustomTitleBar(self)
@@ -124,7 +124,6 @@ class main_ui(QMainWindow):
         # image, ssound initializations
         pass
 
-    """    Logic Functions    """
     # Update
     def sync_ui_params(self):
         try:
