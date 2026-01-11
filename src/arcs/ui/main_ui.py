@@ -87,7 +87,7 @@ class main_ui(QMainWindow):
         self.setting_dock.pixel_input.editingFinished.connect(self.sync_ui_params)
         self.setting_dock.threshold_input.editingFinished.connect(self.sync_ui_params)
 
-        self.setting_dock.start_btn.clicked.connect(self.toggle_camera)
+        self.setting_dock.start_btn.toggled.connect(self.toggle_camera)
         self.setting_dock.detect_btn.toggled.connect(self.toggle_detection)
         
         self.setting_dock.btn_up.clicked.connect(lambda: self.manual_direction("UP"))
@@ -150,25 +150,37 @@ class main_ui(QMainWindow):
             pass
 
     # Toggle
-    def toggle_camera(self):
-        if not self.camera.is_opened:
-            self.camera.open()
-
-        if self.camera.is_running:
-            try:
-                self.camera.stop_grabbing()
-                self.setting_dock.start_btn.setText("Start Camera")
-                self.status_bar.showMessage("Camera Stopped")
-            except Exception as e:
-                QMessageBox.critical(self, "Camera Stop Failed", str(e))
-        else:
+    def toggle_camera(self, checked):
+        if checked:
+            if not self.camera.is_opened:
+                try:
+                    self.camera.open()
+                except Exception as e:
+                    QMessageBox.critical(self, "Camera Open Failed", str(e))
+                    self.setting_dock.start_btn.blockSignals(True)
+                    self.setting_dock.start_btn.setChecked(False)
+                    self.setting_dock.start_btn.blockSignals(False)
+                    return
             try:
                 self.sync_ui_params()
                 self.camera.start_grabbing()
                 self.setting_dock.start_btn.setText("Stop Camera")
                 self.status_bar.showMessage("Camera Running")
             except Exception as e:
-                QMessageBox.critical(self, "Camera Init Failed", str(e))
+                QMessageBox.critical(self, "Camera Start Failed", str(e))
+                self.setting_dock.start_btn.blockSignals(True)
+                self.setting_dock.start_btn.setChecked(False)
+                self.setting_dock.start_btn.blockSignals(False)
+        else:
+            try:
+                self.camera.stop_grabbing()
+                self.setting_dock.start_btn.setText("Start Camera")
+                self.status_bar.showMessage("Camera Stopped")
+            except Exception as e:
+                QMessageBox.critical(self, "Camera Stop Failed", str(e))
+                self.setting_dock.start_btn.blockSignals(True)
+                self.setting_dock.start_btn.setChecked(True)
+                self.setting_dock.start_btn.blockSignals(False)
 
     def toggle_detection(self, checked):
         self.is_detecting = checked
