@@ -1,11 +1,9 @@
 import os
 import cv2
 import sys
-import numpy as np
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QCoreApplication
 
-from arcs.utils.image_processor import cv2_to_qimage
 from arcs.utils.config_manager import load_model_path, load_json_config
 from arcs.core.inference_thread import InferenceThread
 

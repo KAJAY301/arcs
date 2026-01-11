@@ -2,10 +2,8 @@ import os
 import cv2
 import sys
 import shutil
-import numpy as np
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QImage
 from PyQt5.QtWidgets import QApplication
 
 from arcs.utils.config_manager import load_model_path, load_json_config

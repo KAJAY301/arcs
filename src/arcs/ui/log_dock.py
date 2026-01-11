@@ -1,9 +1,7 @@
 import pyqtgraph as pg
 
-from PyQt5.QtWidgets import QDockWidget, QHBoxLayout, QLabel
-from PyQt5.QtCore import QTime
+from PyQt5.QtWidgets import QDockWidget
 
-from arcs.core.camera_cotroller import Camera
 class LogDock(QDockWidget):
     def __init__(self, parent=None):
         super().__init__(parent)

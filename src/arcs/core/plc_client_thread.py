@@ -1,7 +1,5 @@
 from PyQt5.QtCore import QThread, pyqtSignal
 from queue import Queue, Empty
-import struct
-import socket
 import time
 
 from arcs.core.camera_cotroller import Camera

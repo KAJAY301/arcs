@@ -1,10 +1,4 @@
-from PyQt5.QtWidgets import (
-    QMainWindow, QWidget, QDockWidget, QVBoxLayout, QGridLayout, 
-    QLabel, QLineEdit, QPushButton, QSizePolicy, QMessageBox, 
-    QTableWidget, QTableWidgetItem, QHeaderView
-    )
-from PyQt5.QtCore import Qt, QTimer, QEvent, QSize
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QDockWidget, QTableWidget, QTableWidgetItem, QHeaderView
 
 from arcs.utils.config_manager import load_json_config
 

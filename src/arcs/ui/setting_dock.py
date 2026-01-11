@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import (
     QWidget, QDockWidget, QVBoxLayout, QGridLayout, 
-    QLabel, QLineEdit, QPushButton, QSizePolicy, QSpinBox, QDoubleSpinBox
+    QLabel, QPushButton, QSizePolicy, QDoubleSpinBox
     )
 from arcs.utils.config_manager import load_json_config
 
