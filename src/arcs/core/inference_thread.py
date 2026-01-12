@@ -85,7 +85,7 @@ class InferenceThread(QThread):
         try:
             results = self.second_model.predict(
                 img, 
-                conf=self.conf, 
+                conf=self.conf+0.1, 
                 iou=self.iou, 
                 verbose=False
             )

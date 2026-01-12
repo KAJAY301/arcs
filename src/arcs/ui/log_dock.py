@@ -27,13 +27,12 @@ class LogDock(QDockWidget):
         self.main_graph.addLegend()
 
         # set line style
-        pen_x = pg.mkPen(color='#ff5555', width=2)
-        pen_y = pg.mkPen(color='#5555ff', width=2)
+        pen_x = pg.mkPen(color='#ff7777', width=2)
+        pen_y = pg.mkPen(color='#7777ff', width=2)
         self.x_line = self.main_graph.plot(self.time, self.delta_x, name="X", pen = pen_x)
         self.y_line = self.main_graph.plot(self.time, self.delta_y, name="Y", pen = pen_y)
 
     def update_plot(self, data):
-        print("update_plot")
         dx = data[1][0]-data[0][0]
         dy = data[1][1]-data[0][1]
 

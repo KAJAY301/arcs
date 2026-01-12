@@ -13,6 +13,7 @@ from arcs.ui.log_dock import LogDock
 from arcs.ui.setting_dock import SettingDock
 from arcs.ui.monitor_dock import MonitorDock
 from arcs.utils.config_manager import load_env_config, load_json_config, save_json_config_atomic
+from arcs.utils.data_processor import pixel_to_pulse
 from arcs.core.camera_cotroller import Camera
 from arcs.core.plc_client_thread import PLCClientThread
 
@@ -39,14 +40,10 @@ class main_ui(QMainWindow):
         self.sync_ui_params()
 
         # Parameters initialization
-        #self.last_send_time = 0
-        #self.next_seq = 1
         self.is_warning = False
         self.is_detecting = False
         self.initial_pos = None
 
-        
-        
         # Init PLC Thread
         plc_cfg = load_env_config()
         self.plc_thread = PLCClientThread(
@@ -56,7 +53,8 @@ class main_ui(QMainWindow):
         self.plc_thread.error.connect(lambda m: self.status_bar.showMessage(f"PLC ERR: {m}"))
         self.plc_thread.status.connect(lambda m: self.status_bar.showMessage(f"PLC: {m}"))
         self.plc_thread.start()
-
+        self.mm_per_pulses_x =  plc_cfg.get("motor_mm_per_pulse_x")
+        self.mm_per_pulses_y =  plc_cfg.get("motor_mm_per_pulse_y")
 
     def init_ui(self):
         # Header
@@ -216,7 +214,7 @@ class main_ui(QMainWindow):
     def toggle_warning(self, is_alarm:bool):
         if is_alarm:
             #alarm
-            self.img_label.setStyleSheet("border: 10px solid #E03C3C;")
+            self.img_label.setStyleSheet("background-color: #000000; border: 10px solid #E03C3C;")
             #can add alarm sound
         else:
             #normal
@@ -227,9 +225,19 @@ class main_ui(QMainWindow):
         if not q_img.isNull():
             self.img_label.setPixmap(QPixmap.fromImage(q_img))
         if data:
+            dx, dy, px, py = pixel_to_pulse(
+                data[0],
+                data[1],
+                self.setting_dock.pixel_input.value(), 
+                self.mm_per_pulses_x,
+                self.mm_per_pulses_y,
+                self.setting_dock.threshold_input.value()
+            )
+            self.plc_thread.enqueue_move(dx, dy, px, py)
+
             self.log_dock.update_plot(data)
             
-            alarm_distance = 0.5#mm
+            alarm_distance = 0.5#float(self.setting_dock.alarm_input.value())
             dis_pix = math.dist(data[0], data[1])
             dis_mm = dis_pix * float(self.setting_dock.pixel_input.value())
             

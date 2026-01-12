@@ -99,6 +99,7 @@ QSpinBox, QDoubleSpinBox {
     padding: 4px;
     padding-right: 30px;
     color: #ffffff;
+    font-size: 16px;
 }
 
 QSpinBox::up-button, QDoubleSpinBox::up-button,

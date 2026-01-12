@@ -16,15 +16,15 @@ class SettingDock(QDockWidget):
         setting_layout = QGridLayout(setting_group)
         left_layout.addWidget(setting_group, stretch=4)
 
-        setting_layout.addWidget(QLabel("Workpiece Length:     "), 0, 0)
+        setting_layout.addWidget(QLabel("Workpiece Length:   "), 0, 0)
         self.length_cm_input = QDoubleSpinBox()
         setting_layout.addWidget(self.length_cm_input, 0, 1)
 
-        setting_layout.addWidget(QLabel("Workpiece Length:    "), 1, 0)
+        setting_layout.addWidget(QLabel("Workpiece Length:  "), 1, 0)
         self.length_inch_input = QDoubleSpinBox()
         setting_layout.addWidget(self.length_inch_input, 1 ,1)
 
-        setting_layout.addWidget(QLabel("Workpiece Speed:     "), 2, 0)
+        setting_layout.addWidget(QLabel("Workpiece Speed:   "), 2, 0)
         self.speed_input = QDoubleSpinBox()
         setting_layout.addWidget(self.speed_input, 2, 1)
 
@@ -41,9 +41,14 @@ class SettingDock(QDockWidget):
         # Alarm panel
         Alarm_widget = QWidget()
         Alarm_layout = QGridLayout(Alarm_widget)
-        Alarm_layout.addWidget(QLabel("Alarm Distance:"), 0, 0)
+        Alarm_layout.addWidget(QLabel("Auto Threshold:"), 0, 0)
         self.threshold_input = QDoubleSpinBox()
         Alarm_layout.addWidget(self.threshold_input, 0, 1)
+        """
+        Alarm_layout.addWidget(QLabel("Alarm Distance:"), 1, 0)
+        self.alarm_input = QDoubleSpinBox()
+        Alarm_layout.addWidget(self.alarm_input, 0, 1)
+        """
         left_layout.addWidget(Alarm_widget, stretch=1)
 
         # Auto detect button

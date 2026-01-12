@@ -16,12 +16,11 @@ class PLCClientThread(QThread):
 
         self.command_q = Queue(maxsize=2)
         self.running = True
-
+        """
         self.camera = Camera()
-
         self.infer_thread = self.camera.infer_thread
         self.infer_thread.plc_command_signal.connect(self.enqueue_move)
-
+        """
     def enqueue_move(self, dx, dy, px, py):
         try:
             self.command_q.put_nowait((dx, dy, px, py))
@@ -52,14 +51,17 @@ class PLCClientThread(QThread):
             
             # send Modbus 
             try:
+                print("sending:", dx, dy, px, py)
                 success = self.plc.write_D(100, 4, [dx, dy, px, py])
                 print({"status": "SUCCESS" if success else "FAIL"})
+                time.sleep(0.5)
             except Exception as e:
-                self.error.emit(f"PLC Send Error: {e}")
+                print(f"PLC Send Error: {e}")
+                pass
                 # Send Error, force close to reconnect
-                if self.plc.client:
-                    try: self.plc.disconnect()
-                    except: pass
+                #if self.plc.client:
+                #    try: self.plc.disconnect()
+                #   except: pass
 
         if self.plc.client:
             self.plc.disconnect()
