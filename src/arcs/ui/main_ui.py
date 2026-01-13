@@ -21,7 +21,7 @@ class main_ui(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("PyYOLO Scan System V1.2")
-        self.setGeometry(80, 80, 1200, 700)
+        self.setGeometry(80, 80, 1920, 1080)
         self.setWindowFlags(Qt.FramelessWindowHint)
 
         # Config setup
