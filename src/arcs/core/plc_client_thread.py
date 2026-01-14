@@ -59,9 +59,9 @@ class PLCClientThread(QThread):
                 print(f"PLC Send Error: {e}")
                 pass
                 # Send Error, force close to reconnect
-                #if self.plc.client:
-                #    try: self.plc.disconnect()
-                #   except: pass
+                if self.plc.client:
+                    try: self.plc.disconnect()
+                    except: pass
 
         if self.plc.client:
             self.plc.disconnect()
