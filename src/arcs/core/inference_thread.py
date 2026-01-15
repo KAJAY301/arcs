@@ -8,7 +8,7 @@ from PyQt5.QtGui import QImage
 from ultralytics import YOLO
 from queue import Queue, Empty
 
-from arcs.utils.config_manager import load_env_config
+from arcs.utils.config_manager import load_env_config, load_json_config, load_model_path
 from arcs.utils.image_processor import cv2_to_qimage, save_image_timed
 from arcs.utils.data_processor import pixel_to_pulse
 class InferenceThread(QThread):
@@ -18,9 +18,19 @@ class InferenceThread(QThread):
     ui_signal = pyqtSignal(QImage, list)
     plc_command_signal = pyqtSignal(int, int, int, int)
 
-    def __init__(self, first_model_path, second_model_path, conf_thresh, iou_thresh, display_size, parent=None):
+    def __init__(self, parent=None):#, first_model_path, second_model_path, conf_thresh, iou_thresh, display_size
         super().__init__(parent)
 
+        self.cfg = load_json_config()
+        
+        first_model = self.cfg.get('inference').get('first_model')
+        second_model = self.cfg.get('inference').get('second_model')
+        conf_thresh = self.cfg.get('inference').get('conf_threshold')
+        iou_thresh = self.cfg.get('inference').get('iou_threshold')
+
+        first_model_path = load_model_path(first_model)
+        second_model_path = load_model_path(second_model)
+        
         self.first_model = YOLO(first_model_path)
         self.second_model = YOLO(second_model_path)
         self.conf = conf_thresh
@@ -231,9 +241,8 @@ class InferenceThread(QThread):
 
                 cv2.circle(img, f_pt, 2, (255, 255, 255), -1)
                 cv2.circle(img, s_pt, 2, (0, 0, 255), -1)
-
-            q_img = cv2_to_qimage(img)
-            self.ui_signal.emit(q_img, [f_pt, s_pt])
+                q_img = cv2_to_qimage(img)
+                self.ui_signal.emit(q_img, [f_pt, s_pt])
             
 
     def stop(self):

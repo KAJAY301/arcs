@@ -2,14 +2,14 @@ from PyQt5.QtCore import QThread, pyqtSignal
 from queue import Queue, Empty
 import time
 
-from arcs.core.camera_cotroller import Camera
-from arcs.core.plc_controller import FX3U_PLC
+from arcs.driver.camera_cotroller import Camera
+from arcs.driver.plc_controller import FX3U_PLC
 
 class PLCClientThread(QThread):
     error = pyqtSignal(str)
     status = pyqtSignal(str)
 
-    def __init__(self, ip, port, parent=None):
+    def __init__(self, parent=None):
         super().__init__(parent)
 
         self.plc = FX3U_PLC()

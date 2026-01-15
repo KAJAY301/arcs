@@ -1,10 +1,13 @@
 import socket
 import struct
 
+from PyQt5.QtCore import QObject
+
 from arcs.utils.config_manager import load_env_config
 
-class FX3U_PLC:
-    def __init__(self):
+class FX3U_PLC(QObject):
+    def __init__(self, parent=None):
+        super().__init__(parent)
         self.client = None
         self.ip = load_env_config().get("plc_ip")
         self.port = load_env_config().get("plc_port")
