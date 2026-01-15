@@ -1,5 +1,3 @@
-import math
-
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, 
     QLabel, QSizePolicy, QMessageBox, 
@@ -12,10 +10,8 @@ from arcs.ui.custom_title_bar import CustomTitleBar, title_bar_height
 from arcs.ui.log_dock import LogDock
 from arcs.ui.setting_dock import SettingDock
 from arcs.ui.monitor_dock import MonitorDock
-from arcs.utils.config_manager import load_env_config, load_json_config, save_json_config_atomic
-from arcs.utils.data_processor import pixel_to_pulse
-from arcs.driver.camera_cotroller import Camera
-from arcs.core.plc_client_thread import PLCClientThread
+
+from arcs.utils.config_manager import load_json_config, save_json_config_atomic
 
 class MainUi(QMainWindow):
     def __init__(self, core):
@@ -31,40 +27,14 @@ class MainUi(QMainWindow):
         self.core.status_msg.connect(lambda m: self.status_bar.showMessage(m))
         self.core.error_occurred.connect(lambda t, m: QMessageBox.critical(self, t, m))
 
-        #self.init_ui()
-        #self.setup_connections()
-
-        # Config setup
-        self.cfg = load_json_config()
-
-        # Camera Setup
-        #self.camera = Camera()
-
-        # Init Inference Thread
-        #self.infer_thread = self.camera.infer_thread
-        #self.infer_thread.ui_signal.connect(self.handle_inference_result)
-
         #initial ui, media
         self.init_ui()
         self.init_media()
         self.sync_ui_params()
 
         # Parameters initialization
-        self.is_warning = False
-        self.is_detecting = False
         self.initial_pos = None
-
-        # Init PLC Thread
-        plc_cfg = load_env_config()
-        #self.plc_thread = PLCClientThread(
-        #    ip = plc_cfg.get("plc_ip"), 
-        #    port = plc_cfg.get("plc_port")
-        #)
-        #self.plc_thread.error.connect(lambda m: self.status_bar.showMessage(f"PLC ERR: {m}"))
-        #self.plc_thread.status.connect(lambda m: self.status_bar.showMessage(f"PLC: {m}"))
-        #self.plc_thread.start()
-        self.mm_per_pulses_x =  plc_cfg.get("motor_mm_per_pulse_x")
-        self.mm_per_pulses_y =  plc_cfg.get("motor_mm_per_pulse_y")
+        self.cfg = load_json_config()
 
     def init_ui(self):
         # Header
