@@ -182,10 +182,10 @@ class main_ui(QMainWindow):
     def toggle_detection(self, checked):
         self.is_detecting = checked
         if checked:
-            self.setting_dock.detect_btn.setText("Stop Detect")
+            self.setting_dock.detect_btn.setText("Manual Control")
             self.infer_thread.is_detacting = True
         else:
-            self.setting_dock.detect_btn.setText("Start Detect")
+            self.setting_dock.detect_btn.setText("Auto Control")
             self.infer_thread.is_detacting = False
 
     def manual_direction(self, direction):

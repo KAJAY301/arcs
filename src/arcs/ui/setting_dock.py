@@ -51,8 +51,8 @@ class SettingDock(QDockWidget):
         """
         left_layout.addWidget(Alarm_widget, stretch=1)
 
-        # Auto detect button
-        self.detect_btn = QPushButton("Start Detect")
+        # Detect button
+        self.detect_btn = QPushButton("Auto Control")
         self.detect_btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.detect_btn.setCheckable(True)
         left_layout.addWidget(self.detect_btn, stretch=2)
