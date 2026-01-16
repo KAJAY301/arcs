@@ -107,6 +107,14 @@ class MainCore(QObject):
         else:
             self.inference_thread.is_detacting = False
             return True
+        
+    def toggle_control(self, checked):
+        if checked:
+            self.inference_thread.auto_control = True
+            return True
+        else:
+            self.inference_thread.auto_control = False
+            return True
 
     def manual_move(self, direction: str):
         dx, dy, px, py = 2, 2, 0, 0

@@ -54,6 +54,7 @@ class InferenceThread(QThread):
         self.deadband_mm = 1.0
 
         self.is_detacting = False
+        self.auto_control = False
 
     def update_params(self, pixel_size, deadband_mm):
         self.pixel_size = pixel_size
@@ -210,26 +211,46 @@ class InferenceThread(QThread):
 
     def run(self):
         while self.running:
+            # Try to get a frame from the queue
             try:
                 frame = self.frame_q.get(timeout=0.1)
             except Empty:
                 continue
-
+            
+            # first inference
             cx, cy = self.first_inference(frame)
             if cx is None or cy is None:
                 continue
-
+            
+            # Cut image to 640x640
             img = self.cut_img(frame, cx, cy, size_x=640, size_y=640)
+            # If not detecting, just send the image back
+            if not self.is_detacting:
+                q_img = cv2_to_qimage(img)
+                self.ui_signal.emit(q_img, [])
+                continue
+            
+            # Second inference
             coordinate = self.second_inference(img)
             first_points_list = coordinate[0]
             second_points_list = coordinate[1]
-            if not first_points_list or not second_points_list or not self.is_detacting:
+            # If no points detected, save image and send back
+            if not first_points_list or not second_points_list:
                 self.save_img(img)
                 q_img = cv2_to_qimage(img)
                 self.ui_signal.emit(q_img, [])
                 continue
+
+            # Find closest point
             f_pt, s_pt = self.find_closest_points(first_points_list, second_points_list)
-            if f_pt and s_pt:
+            # Send drawed image
+            cv2.circle(img, f_pt, 2, (255, 255, 255), -1)
+            cv2.circle(img, s_pt, 2, (0, 0, 255), -1)
+            q_img = cv2_to_qimage(img)
+            self.ui_signal.emit(q_img, [f_pt, s_pt])
+
+            # Send data to PLC if auto_control is enabled
+            if self.auto_control:
                 dx, dy, px, py = pixel_to_pulse(
                                     f_pt, s_pt, 
                                     self.pixel_size, 
@@ -239,10 +260,7 @@ class InferenceThread(QThread):
                                 )
                 self.plc_command_signal.emit(dx, dy, px, py)
 
-                cv2.circle(img, f_pt, 2, (255, 255, 255), -1)
-                cv2.circle(img, s_pt, 2, (0, 0, 255), -1)
-                q_img = cv2_to_qimage(img)
-                self.ui_signal.emit(q_img, [f_pt, s_pt])
+                
             
 
     def stop(self):

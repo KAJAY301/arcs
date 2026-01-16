@@ -67,6 +67,7 @@ class MainUi(QMainWindow):
 
         self.setting_dock.start_btn.toggled.connect(self.toggle_camera)
         self.setting_dock.detect_btn.toggled.connect(self.toggle_detection)
+        self.setting_dock.control_btn.toggled.connect(self.toggle_control)
         
         self.setting_dock.btn_up.clicked.connect(lambda: self.core.manual_move("UP"))
         self.setting_dock.btn_down.clicked.connect(lambda: self.core.manual_move("DOWN"))
@@ -80,7 +81,7 @@ class MainUi(QMainWindow):
         self.img_label = QLabel("Camera Feed")
         self.img_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.img_label.setAlignment(Qt.AlignCenter)
-        self.img_label.setStyleSheet("background-color: #000000; border: 2px solid #222222;")
+        self.img_label.setStyleSheet("background-color: #000000; border: 10px solid #222222;")
         main_layout.addWidget(self.img_label, stretch=1)
 
         # Monitor Dock
@@ -142,33 +143,19 @@ class MainUi(QMainWindow):
             self.setting_dock.detect_btn.setChecked(not checked)
             self.setting_dock.detect_btn.blockSignals(False)
             return
-        text = "Auto Control" if checked else "Manual Control"
+        text = "Stop Detect" if checked else "Start Detect"
         self.setting_dock.detect_btn.setText(text)
-    """
-    def manual_direction(self, direction):
-        manual_move_mm = self.cfg.get('setting', {}).get('manual_move_mm')
-        mm_per_pulses_x = load_env_config().get('motor_mm_per_pulse_x')
-        mm_per_pulses_y = load_env_config().get('motor_mm_per_pulse_y')
-        pulses_x = int(manual_move_mm / mm_per_pulses_x)
-        pulses_y = int(manual_move_mm / mm_per_pulses_y)
-        dx, dy, px, py = 2, 2, 0, 0
 
-        if   direction == "UP"   : 
-            py = pulses_y
-            dy = 2
-        elif direction == "DOWN" : 
-            py = pulses_y
-            dy = 1
-        elif direction == "LEFT" : 
-            px = pulses_x
-            dx = 2
-        elif direction == "RIGHT": 
-            px = pulses_x
-            dx = 1
+    def toggle_control(self, checked):
+        success = self.core.toggle_control(checked)
+        if not success:
+            self.setting_dock.control_btn.blockSignals(True)
+            self.setting_dock.control_btn.setChecked(not checked)
+            self.setting_dock.control_btn.blockSignals(False)
+            return
+        text = "Auto Control" if checked else "Manual Control"
+        self.setting_dock.control_btn.setText(text)    
 
-        self.plc_thread.enqueue_move(dx, dy, px, py)
-    """
-    
 
     # Inference result
     def handle_inference_result(self, q_img):
