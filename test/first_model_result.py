@@ -13,22 +13,13 @@ def run_test():
     cfg = load_json_config()
     inf_cfg = cfg.get("inference", {})
     
-    # 讀取模型路徑 (請確保 config 裡有 first_model 這個 key)
-    model_path = load_model_path(inf_cfg.get("first_model") or inf_cfg.get("model"))
-    
     img_dir = "test/test_img"
     output_dir = "test/first_model_result"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
     # 初始化推論引擎 (這裡我們不需要 Start Thread，直接調用它的方法)
-    tester = InferenceThread(
-        first_model_path=model_path,
-        second_model_path=model_path, 
-        conf_thresh=inf_cfg.get("conf_threshold"),
-        iou_thresh=inf_cfg.get("iou_threshold"),
-        display_size=(640, 640)
-    )
+    tester = InferenceThread()
 
     image_files = [f for f in os.listdir(img_dir) if f.lower().endswith(('.jpg', '.png', '.bmp'))]
     image_files.sort()
