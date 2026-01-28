@@ -48,10 +48,10 @@ class MainCore(QObject):
 
         self.pixel_size = self.cfg.get('camera').get('pixel_size_mm')
 
+        self.is_warning = False
+
         self.plc_thread.start()
         self.inference_thread.start()
-
-        self.is_warning = False
 
     def update_system_parameters(self, ui_input: dict):
         """
@@ -74,8 +74,7 @@ class MainCore(QObject):
             #print(f"Sync Parameters Failed: {e}")
             self.error_occurred.emit("Synced Parameters Failed", str(e))
                                  
-
-    # Camera
+    # Buttom
     def toggle_camera(self, checked):
         if checked:
             if not self.camera.is_opened:
@@ -134,13 +133,14 @@ class MainCore(QObject):
 
         self.plc_thread.enqueue_move(dx, dy, px, py)
 
+    # Data processing
     def process_inference_data(self, q_img: QImage, data: list):
         if not q_img.isNull():
             self.frame_ready.emit(q_img)
         if data:
             self.log_data.emit(data)
             
-            alarm_distance = 1.0#float(self.setting_dock.alarm_input.value())
+            alarm_distance = 1.0 #float(self.setting_dock.alarm_input.value())
             dis_pix = math.dist(data[0], data[1])
             dis_mm = dis_pix * float(self.pixel_size)
             should_alarm = dis_mm > alarm_distance

@@ -21,12 +21,11 @@ class InferenceThread(QThread):
     def __init__(self, parent=None):#, first_model_path, second_model_path, conf_thresh, iou_thresh, display_size
         super().__init__(parent)
 
-        self.cfg = load_json_config()
-        
-        first_model = self.cfg.get('inference').get('first_model')
-        second_model = self.cfg.get('inference').get('second_model')
-        conf_thresh = self.cfg.get('inference').get('conf_threshold')
-        iou_thresh = self.cfg.get('inference').get('iou_threshold')
+        cfg = load_json_config()
+        first_model = cfg.get('inference').get('first_model')
+        second_model = cfg.get('inference').get('second_model')
+        conf_thresh = cfg.get('inference').get('conf_threshold')
+        iou_thresh = cfg.get('inference').get('iou_threshold')
 
         first_model_path = load_model_path(first_model)
         second_model_path = load_model_path(second_model)
@@ -36,14 +35,12 @@ class InferenceThread(QThread):
         self.conf = conf_thresh
         self.iou = iou_thresh
         self.frame_q = Queue(maxsize=2)
-        #self.display_size = display_size
-        self.running = True
-        self.last_crop = None
 
         self.save_dir = "data/no_match_img"
         self.max_save_count = 2000
         self.last_save_time = 0
         self.cooldown_seconds = 5
+
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
         self.current_save_count = len(os.listdir(self.save_dir))
@@ -55,6 +52,8 @@ class InferenceThread(QThread):
 
         self.is_detacting = False
         self.auto_control = False
+        self.running = True
+        self.last_crop = None
 
     def update_params(self, pixel_size, deadband_mm):
         self.pixel_size = pixel_size
@@ -103,8 +102,8 @@ class InferenceThread(QThread):
             res = results[0]
             first_points_list = []
             second_points_list = []
+
             # Using box:
-            
             if res.boxes:
                 for box in res.boxes:
                     cls_id = int(box.cls[0])
@@ -132,8 +131,8 @@ class InferenceThread(QThread):
                     elif "second_cross" in label:
                         second_points_list.append((cx, cy))
             """
-            return first_points_list, second_points_list
 
+            return first_points_list, second_points_list
 
         except Exception as e:
             print(f"Second Infer Error: {e}")

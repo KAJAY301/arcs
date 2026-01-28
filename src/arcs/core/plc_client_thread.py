@@ -2,7 +2,6 @@ from PyQt5.QtCore import QThread, pyqtSignal
 from queue import Queue, Empty
 import time
 
-from arcs.driver.camera_cotroller import Camera
 from arcs.driver.plc_controller import FX3U_PLC
 
 class PLCClientThread(QThread):
@@ -16,11 +15,7 @@ class PLCClientThread(QThread):
 
         self.command_q = Queue(maxsize=2)
         self.running = True
-        """
-        self.camera = Camera()
-        self.infer_thread = self.camera.infer_thread
-        self.infer_thread.plc_command_signal.connect(self.enqueue_move)
-        """
+        
     def enqueue_move(self, dx, dy, px, py):
         try:
             self.command_q.put_nowait((dx, dy, px, py))
@@ -38,18 +33,20 @@ class PLCClientThread(QThread):
     
     def run(self):
         while self.running:
+            # Connect
             if self.plc.client is None:
                 if not self.plc.is_connected:
                     self.plc.connect()
                     time.sleep(2) # wait 2 sec if connect fail
                     continue
 
+            # Get Data
             try:
                 dx, dy, px, py = self.command_q.get(timeout=0.1)
             except Empty:
                 continue
             
-            # send Modbus 
+            # Send Data
             try:
                 state = self.plc.read_M(10)
                 if state == 1:
@@ -68,41 +65,7 @@ class PLCClientThread(QThread):
 
         if self.plc.client:
             self.plc.disconnect()
-    """
-    def _send_move_command(self, dx, dy, px, py):
-        # write in register
-        data_to_write = struct.pack('<H', dx)+struct.pack('<H', dy)+struct.pack('<H', px)+struct.pack('<H', py)
-        frame = b'\x03\xFF\x0A\x00\x64\x00\x00\x00\x20\x44\x04\x00' + data_to_write
-        try:
-            self.client.sendall(frame)
-            response = self.client.recv(1024)
-            if response == b'\x83\x00':
-                self.status.emit(f"Succes Sent {dx}, {dy}, {px}, {py}")
-                return True
-            else:
-                return False
 
-        except Exception as e:
-            raise e
-        
-    def connect_plc(self):
-        #Try connect PLC
-        print("try to connect PLC...")
-        try:
-            temp_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            temp_client.settimeout(1)
-            temp_client.connect((self.ip, self.port))
-            self.client = temp_client
-            print("PLC Connected")
-            return True
-        except (socket.timeout, ConnectionRefusedError, Exception) as e:
-            print(f"Connect fail: {e}")
-            # 確保失敗時 self.client 是 None
-            if 'temp_client' in locals():
-                temp_client.close()
-            self.client = None 
-            return False
-    """
     def stop(self):
         self.running = False
         self.wait()
