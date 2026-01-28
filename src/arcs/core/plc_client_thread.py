@@ -51,17 +51,20 @@ class PLCClientThread(QThread):
             
             # send Modbus 
             try:
-                print("sending:", dx, dy, px, py)
-                success = self.plc.write_D(100, 4, [dx, dy, px, py])
-                print({"status": "SUCCESS" if success else "FAIL"})
-                time.sleep(0.5)
+                state = self.plc.read_M(10)
+                if state == 1:
+                    continue
+                elif state == 0:
+                    success = self.plc.write_D(100, 4, [dx, dy, px, py])
+                time.sleep(0.1)
+
             except Exception as e:
                 print(f"PLC Send Error: {e}")
-                pass
-                # Send Error, force close to reconnect
                 if self.plc.client:
-                    try: self.plc.disconnect()
-                    except: pass
+                    try: 
+                        self.plc.disconnect()
+                    except: 
+                        pass
 
         if self.plc.client:
             self.plc.disconnect()
