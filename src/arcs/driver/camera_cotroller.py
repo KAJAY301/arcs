@@ -49,7 +49,7 @@ class Camera(QObject):
         self.pylon_camera.Close()
         self.is_opened = False
 
-    def update_camera_params(self, ui_input: dict):
+    def update_params(self, ui_input: dict) -> None:
         """
         Update camera parameters based on UI input and config.json.
         """

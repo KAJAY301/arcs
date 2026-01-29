@@ -13,8 +13,10 @@ from arcs.utils.config_manager import load_json_config, load_env_config
 
 class MainCore(QObject):
     """
-
+    Core logic handler for the application.  
+    Manages camera, PLC communication, and inference processing.
     """
+    # Signal to UI
     frame_ready = pyqtSignal(QImage)
     alarm_trigger = pyqtSignal(bool)
     log_data = pyqtSignal(list)
@@ -33,20 +35,20 @@ class MainCore(QObject):
         self.camera.raw_frame_signal.connect(self.inference_thread.submit_frame)
         # 2. InferenceThread -> PLCClientThread
         self.inference_thread.plc_command_signal.connect(self.plc_thread.enqueue_move)
-        # 3. InferenceThread -> UI
+        # 3. InferenceThread -> Core -> UI
         self.inference_thread.ui_signal.connect(self.process_inference_data)
 
         # Init parameters
-        self.cfg = load_json_config()
-        self.env = load_env_config()
+        cfg = load_json_config()
+        env = load_env_config()
 
-        manual_move_mm = self.cfg.get('setting').get('manual_move_mm')
-        mm_per_pulses_x = self.env.get('motor_mm_per_pulse_x')
-        mm_per_pulses_y = self.env.get('motor_mm_per_pulse_y')
+        manual_move_mm = cfg.get('setting').get('manual_move_mm')
+        mm_per_pulses_x = env.get('motor_mm_per_pulse_x')
+        mm_per_pulses_y = env.get('motor_mm_per_pulse_y')
         self.pulses_x = int(manual_move_mm / mm_per_pulses_x)
         self.pulses_y = int(manual_move_mm / mm_per_pulses_y)
 
-        self.pixel_size = self.cfg.get('camera').get('pixel_size_mm')
+        self.pixel_size = cfg.get('camera').get('pixel_size_mm')
 
         self.is_warning = False
 
@@ -55,23 +57,20 @@ class MainCore(QObject):
 
     def update_system_parameters(self, ui_input: dict):
         """
-        ui_input = {
-                'length_cm_input': length_cm_input,
-                'speed_input': speed_input,
-                'pixel_input': pixel_input,
-                'threshold_input': threshold_input
+        Update parameters from UI input to InferenceThread and Camera.  
+        ui_input = {  
+                'length_cm_input': length_cm_input,  
+                'speed_input': speed_input,  
+                'pixel_input': pixel_input,  
+                'threshold_input': threshold_input  
             }
         """
         try:
-            self.inference_thread.update_params(
-                pixel_size = ui_input["pixel_input"],
-                deadband_mm = ui_input["threshold_input"]
-            )
-            self.camera.update_camera_params(ui_input)
+            self.inference_thread.update_params(ui_input)
+            self.camera.update_params(ui_input)
             self.pixel_size = ui_input["pixel_input"]
             self.status_msg.emit("Synced Parameters Successfully")
         except Exception as e:
-            #print(f"Sync Parameters Failed: {e}")
             self.error_occurred.emit("Synced Parameters Failed", str(e))
                                  
     # Buttom
@@ -135,6 +134,9 @@ class MainCore(QObject):
 
     # Data processing
     def process_inference_data(self, q_img: QImage, data: list):
+        """
+        Process inference data and emit signals to UI.  
+        """
         if not q_img.isNull():
             self.frame_ready.emit(q_img)
         if data:

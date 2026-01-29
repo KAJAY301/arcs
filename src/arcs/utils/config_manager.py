@@ -56,7 +56,7 @@ def load_stylesheet(theme_name: str = "dark") -> str:
 
 def load_env_config() -> dict:
     """
-    Load `.env`
+    Load `.env`, return as dict 
     """
     env_path = BASE_DIR / ".env"
     load_dotenv(env_path)
@@ -69,7 +69,7 @@ def load_env_config() -> dict:
 
 def load_json_config(defaults: dict = None) -> dict:
     """
-    Load `config.json`
+    Load `config.json`, return as dict
     """
     json_path = BASE_DIR / "configs" / "config.json"
     defaults = defaults or {}

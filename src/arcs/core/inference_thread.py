@@ -55,9 +55,9 @@ class InferenceThread(QThread):
         self.running = True
         self.last_crop = None
 
-    def update_params(self, pixel_size, deadband_mm):
-        self.pixel_size = pixel_size
-        self.deadband_mm = deadband_mm
+    def update_params(self, ui_intput: dict) -> None:
+        self.pixel_size = ui_intput.get('pixel_input')
+        self.deadband_mm = ui_intput.get('threshold_input')
 
     def submit_frame(self, frame):
         if self.frame_q.full():
