@@ -8,7 +8,7 @@ from PyQt5.QtGui import QImage
 from ultralytics import YOLO
 from queue import Queue, Empty
 
-from arcs.utils.config_manager import load_env_config
+from arcs.utils.config_manager import load_env_config, load_json_config, load_model_path
 from arcs.utils.image_processor import cv2_to_qimage, save_image_timed
 from arcs.utils.data_processor import pixel_to_pulse
 class InferenceThread(QThread):
@@ -18,22 +18,29 @@ class InferenceThread(QThread):
     ui_signal = pyqtSignal(QImage, list)
     plc_command_signal = pyqtSignal(int, int, int, int)
 
-    def __init__(self, first_model_path, second_model_path, conf_thresh, iou_thresh, display_size, parent=None):
+    def __init__(self, parent=None):#, first_model_path, second_model_path, conf_thresh, iou_thresh, display_size
         super().__init__(parent)
 
+        cfg = load_json_config()
+        first_model = cfg.get('inference').get('first_model')
+        second_model = cfg.get('inference').get('second_model')
+        conf_thresh = cfg.get('inference').get('conf_threshold')
+        iou_thresh = cfg.get('inference').get('iou_threshold')
+
+        first_model_path = load_model_path(first_model)
+        second_model_path = load_model_path(second_model)
+        
         self.first_model = YOLO(first_model_path)
         self.second_model = YOLO(second_model_path)
         self.conf = conf_thresh
         self.iou = iou_thresh
         self.frame_q = Queue(maxsize=2)
-        #self.display_size = display_size
-        self.running = True
-        self.last_crop = None
 
         self.save_dir = "data/no_match_img"
         self.max_save_count = 2000
         self.last_save_time = 0
         self.cooldown_seconds = 5
+
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
         self.current_save_count = len(os.listdir(self.save_dir))
@@ -44,10 +51,13 @@ class InferenceThread(QThread):
         self.deadband_mm = 1.0
 
         self.is_detacting = False
+        self.auto_control = False
+        self.running = True
+        self.last_crop = None
 
-    def update_params(self, pixel_size, deadband_mm):
-        self.pixel_size = pixel_size
-        self.deadband_mm = deadband_mm
+    def update_params(self, ui_intput: dict) -> None:
+        self.pixel_size = ui_intput.get('pixel_input')
+        self.deadband_mm = ui_intput.get('threshold_input')
 
     def submit_frame(self, frame):
         if self.frame_q.full():
@@ -92,8 +102,8 @@ class InferenceThread(QThread):
             res = results[0]
             first_points_list = []
             second_points_list = []
+
             # Using box:
-            
             if res.boxes:
                 for box in res.boxes:
                     cls_id = int(box.cls[0])
@@ -121,8 +131,8 @@ class InferenceThread(QThread):
                     elif "second_cross" in label:
                         second_points_list.append((cx, cy))
             """
-            return first_points_list, second_points_list
 
+            return first_points_list, second_points_list
 
         except Exception as e:
             print(f"Second Infer Error: {e}")
@@ -200,26 +210,46 @@ class InferenceThread(QThread):
 
     def run(self):
         while self.running:
+            # Try to get a frame from the queue
             try:
                 frame = self.frame_q.get(timeout=0.1)
             except Empty:
                 continue
-
+            
+            # first inference
             cx, cy = self.first_inference(frame)
             if cx is None or cy is None:
                 continue
-
+            
+            # Cut image to 640x640
             img = self.cut_img(frame, cx, cy, size_x=640, size_y=640)
+            # If not detecting, just send the image back
+            if not self.is_detacting:
+                q_img = cv2_to_qimage(img)
+                self.ui_signal.emit(q_img, [])
+                continue
+            
+            # Second inference
             coordinate = self.second_inference(img)
             first_points_list = coordinate[0]
             second_points_list = coordinate[1]
-            if not first_points_list or not second_points_list or not self.is_detacting:
+            # If no points detected, save image and send back
+            if not first_points_list or not second_points_list:
                 self.save_img(img)
                 q_img = cv2_to_qimage(img)
                 self.ui_signal.emit(q_img, [])
                 continue
+
+            # Find closest point
             f_pt, s_pt = self.find_closest_points(first_points_list, second_points_list)
-            if f_pt and s_pt:
+            # Send drawed image
+            cv2.circle(img, f_pt, 2, (255, 255, 255), -1)
+            cv2.circle(img, s_pt, 2, (0, 0, 255), -1)
+            q_img = cv2_to_qimage(img)
+            self.ui_signal.emit(q_img, [f_pt, s_pt])
+
+            # Send data to PLC if auto_control is enabled
+            if self.auto_control:
                 dx, dy, px, py = pixel_to_pulse(
                                     f_pt, s_pt, 
                                     self.pixel_size, 
@@ -229,11 +259,7 @@ class InferenceThread(QThread):
                                 )
                 self.plc_command_signal.emit(dx, dy, px, py)
 
-                cv2.circle(img, f_pt, 2, (255, 255, 255), -1)
-                cv2.circle(img, s_pt, 2, (0, 0, 255), -1)
-
-            q_img = cv2_to_qimage(img)
-            self.ui_signal.emit(q_img, [f_pt, s_pt])
+                
             
 
     def stop(self):

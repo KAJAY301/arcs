@@ -1,33 +1,20 @@
 from pypylon import pylon
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QObject, QTimer, pyqtSignal
+import numpy as np
 
-from arcs.core.inference_thread import InferenceThread
 from arcs.utils.config_manager import load_json_config, load_model_path
 
-class Camera:
-    def __init__(self):
+class Camera(QObject):
+    raw_frame_signal = pyqtSignal(np.ndarray)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
         self.is_opened = False
         self.is_running = False
         self.pylon_camera = None
         self.cfg = load_json_config()
         self.camera_timer = QTimer()
         self.camera_timer.timeout.connect(self.grab_frame)
-
-        inf_cfg = self.cfg.get("inference", {})
-
-        first_model = inf_cfg.get("first_model")
-        second_model = inf_cfg.get("second_model")
-        
-        self.first_model_path = load_model_path(first_model)
-        self.second_model_path = load_model_path(second_model)
-        self.infer_thread = InferenceThread(
-            first_model_path = self.first_model_path, 
-            second_model_path = self.second_model_path,
-            conf_thresh = inf_cfg.get("conf_threshold"),
-            iou_thresh = inf_cfg.get("iou_threshold"),
-            display_size = (500, 500)
-        )
-        self.infer_thread.start()
 
     def open(self):
         """
@@ -62,7 +49,7 @@ class Camera:
         self.pylon_camera.Close()
         self.is_opened = False
 
-    def update_camera_params(self, ui_input: dict):
+    def update_params(self, ui_input: dict) -> None:
         """
         Update camera parameters based on UI input and config.json.
         """
@@ -79,6 +66,7 @@ class Camera:
 
             try:
                 #self.pylon_camera.PixelFormat.SetValue(camera_param.get('Pixel_format'))
+                #self.pylon_camera.GevSCPSPacketSize.SetValue(9014)
                 self.pylon_camera.PixelFormat.SetValue("RGB8")
                 self.pylon_camera.ReverseX.SetValue(camera_param.get('reverse_x'))
                 self.pylon_camera.Width.SetValue(camera_param.get('width'))
@@ -100,7 +88,8 @@ class Camera:
                 res = self.pylon_camera.RetrieveResult(500, pylon.TimeoutHandling_ThrowException)
                 if res.GrabSucceeded():
                     img = res.Array
-                    self.infer_thread.submit_frame(img)
+                    self.raw_frame_signal.emit(img)
+                    #self.infer_thread.submit_frame(img)
                 res.Release()
             except Exception:
                 pass

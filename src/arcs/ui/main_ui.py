@@ -1,5 +1,3 @@
-import math
-
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, 
     QLabel, QSizePolicy, QMessageBox, 
@@ -12,27 +10,22 @@ from arcs.ui.custom_title_bar import CustomTitleBar, title_bar_height
 from arcs.ui.log_dock import LogDock
 from arcs.ui.setting_dock import SettingDock
 from arcs.ui.monitor_dock import MonitorDock
-from arcs.utils.config_manager import load_env_config, load_json_config, save_json_config_atomic
-from arcs.utils.data_processor import pixel_to_pulse
-from arcs.core.camera_cotroller import Camera
-from arcs.core.plc_client_thread import PLCClientThread
 
-class main_ui(QMainWindow):
-    def __init__(self):
+from arcs.utils.config_manager import load_json_config, save_json_config_atomic
+
+class MainUi(QMainWindow):
+    def __init__(self, core):
         super().__init__()
         self.setWindowTitle("PyYOLO Scan System V1.2")
-        self.setGeometry(80, 80, 1920, 1080)
+        self.setGeometry(80, 80, 1280, 720)
         self.setWindowFlags(Qt.FramelessWindowHint)
 
-        # Config setup
-        self.cfg = load_json_config()
-
-        # Camera Setup
-        self.camera = Camera()
-
-        # Init Inference Thread
-        self.infer_thread = self.camera.infer_thread
-        self.infer_thread.ui_signal.connect(self.handle_inference_result)
+        self.core = core
+        self.core.frame_ready.connect(self.handle_inference_result)
+        self.core.alarm_trigger.connect(self.toggle_warning)
+        self.core.log_data.connect(lambda d: self.log_dock.update_plot(d))
+        self.core.status_msg.connect(lambda m: self.status_bar.showMessage(m))
+        self.core.error_occurred.connect(lambda t, m: QMessageBox.critical(self, t, m))
 
         #initial ui, media
         self.init_ui()
@@ -40,21 +33,8 @@ class main_ui(QMainWindow):
         self.sync_ui_params()
 
         # Parameters initialization
-        self.is_warning = False
-        self.is_detecting = False
         self.initial_pos = None
-
-        # Init PLC Thread
-        plc_cfg = load_env_config()
-        self.plc_thread = PLCClientThread(
-            ip = plc_cfg.get("plc_ip"), 
-            port = plc_cfg.get("plc_port")
-        )
-        self.plc_thread.error.connect(lambda m: self.status_bar.showMessage(f"PLC ERR: {m}"))
-        self.plc_thread.status.connect(lambda m: self.status_bar.showMessage(f"PLC: {m}"))
-        self.plc_thread.start()
-        self.mm_per_pulses_x =  plc_cfg.get("motor_mm_per_pulse_x")
-        self.mm_per_pulses_y =  plc_cfg.get("motor_mm_per_pulse_y")
+        self.cfg = load_json_config()
 
     def init_ui(self):
         # Header
@@ -87,11 +67,12 @@ class main_ui(QMainWindow):
 
         self.setting_dock.start_btn.toggled.connect(self.toggle_camera)
         self.setting_dock.detect_btn.toggled.connect(self.toggle_detection)
+        self.setting_dock.control_btn.toggled.connect(self.toggle_control)
         
-        self.setting_dock.btn_up.clicked.connect(lambda: self.manual_direction("UP"))
-        self.setting_dock.btn_down.clicked.connect(lambda: self.manual_direction("DOWN"))
-        self.setting_dock.btn_left.clicked.connect(lambda: self.manual_direction("LEFT"))
-        self.setting_dock.btn_right.clicked.connect(lambda: self.manual_direction("RIGHT"))
+        self.setting_dock.btn_up.clicked.connect(lambda: self.core.manual_move("UP"))
+        self.setting_dock.btn_down.clicked.connect(lambda: self.core.manual_move("DOWN"))
+        self.setting_dock.btn_left.clicked.connect(lambda: self.core.manual_move("LEFT"))
+        self.setting_dock.btn_right.clicked.connect(lambda: self.core.manual_move("RIGHT"))
 
         # Main panel
         main_layout = QVBoxLayout(self.central_widget)
@@ -100,7 +81,7 @@ class main_ui(QMainWindow):
         self.img_label = QLabel("Camera Feed")
         self.img_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.img_label.setAlignment(Qt.AlignCenter)
-        self.img_label.setStyleSheet("background-color: #000000; border: 2px solid #222222;")
+        self.img_label.setStyleSheet("background-color: #000000; border: 10px solid #222222;")
         main_layout.addWidget(self.img_label, stretch=1)
 
         # Monitor Dock
@@ -119,7 +100,7 @@ class main_ui(QMainWindow):
         self.log_dock.hide()
 
     def init_media(self):
-        # image, ssound initializations
+        # image, sound initializations
         pass
 
     # Update
@@ -135,116 +116,59 @@ class main_ui(QMainWindow):
             ui_input = {
                 'length_cm_input': length_cm_input,
                 'speed_input': speed_input,
-                'pixel_input': pixel_input
+                'pixel_input': pixel_input,
+                'threshold_input': threshold_input
             }
-            self.camera.update_camera_params(ui_input)
+            self.core.update_system_parameters(ui_input)
             self.monitor_dock.update_params(ui_input)
-            self.infer_thread.update_params(pixel_input, threshold_input)
-            
-            #self.update_monitor_table()
         except Exception as e:
             print(f"Error syncing UI params: {e}")
             pass
 
     # Toggle
     def toggle_camera(self, checked):
-        if checked:
-            if not self.camera.is_opened:
-                try:
-                    self.camera.open()
-                except Exception as e:
-                    QMessageBox.critical(self, "Camera Open Failed", str(e))
-                    self.setting_dock.start_btn.blockSignals(True)
-                    self.setting_dock.start_btn.setChecked(False)
-                    self.setting_dock.start_btn.blockSignals(False)
-                    return
-            try:
-                self.sync_ui_params()
-                self.camera.start_grabbing()
-                self.setting_dock.start_btn.setText("Stop Camera")
-                self.status_bar.showMessage("Camera Running")
-            except Exception as e:
-                QMessageBox.critical(self, "Camera Start Failed", str(e))
-                self.setting_dock.start_btn.blockSignals(True)
-                self.setting_dock.start_btn.setChecked(False)
-                self.setting_dock.start_btn.blockSignals(False)
-        else:
-            try:
-                self.camera.stop_grabbing()
-                self.setting_dock.start_btn.setText("Start Camera")
-                self.status_bar.showMessage("Camera Stopped")
-            except Exception as e:
-                QMessageBox.critical(self, "Camera Stop Failed", str(e))
-                self.setting_dock.start_btn.blockSignals(True)
-                self.setting_dock.start_btn.setChecked(True)
-                self.setting_dock.start_btn.blockSignals(False)
+        success = self.core.toggle_camera(checked)
+        if not success:
+            self.setting_dock.start_btn.blockSignals(True)
+            self.setting_dock.start_btn.setChecked(not checked)
+            self.setting_dock.start_btn.blockSignals(False)
+            return
+        text = "Stop Camera" if checked else "Start Camera"
+        self.setting_dock.start_btn.setText(text)
 
     def toggle_detection(self, checked):
-        self.is_detecting = checked
-        if checked:
-            self.setting_dock.detect_btn.setText("Stop Detect")
-            self.infer_thread.is_detacting = True
-        else:
-            self.setting_dock.detect_btn.setText("Start Detect")
-            self.infer_thread.is_detacting = False
+        success = self.core.toggle_detection(checked)
+        if not success:
+            self.setting_dock.detect_btn.blockSignals(True)
+            self.setting_dock.detect_btn.setChecked(not checked)
+            self.setting_dock.detect_btn.blockSignals(False)
+            return
+        text = "Stop Detect" if checked else "Start Detect"
+        self.setting_dock.detect_btn.setText(text)
 
-    def manual_direction(self, direction):
-        manual_move_mm = self.cfg.get('setting', {}).get('manual_move_mm')
-        mm_per_pulses_x = load_env_config().get('motor_mm_per_pulse_x')
-        mm_per_pulses_y = load_env_config().get('motor_mm_per_pulse_y')
-        pulses_x = int(manual_move_mm / mm_per_pulses_x)
-        pulses_y = int(manual_move_mm / mm_per_pulses_y)
-        dx, dy, px, py = 2, 2, 0, 0
+    def toggle_control(self, checked):
+        success = self.core.toggle_control(checked)
+        if not success:
+            self.setting_dock.control_btn.blockSignals(True)
+            self.setting_dock.control_btn.setChecked(not checked)
+            self.setting_dock.control_btn.blockSignals(False)
+            return
+        text = "Auto Control" if checked else "Manual Control"
+        self.setting_dock.control_btn.setText(text)    
 
-        if   direction == "UP"   : 
-            py = pulses_y
-            dy = 2
-        elif direction == "DOWN" : 
-            py = pulses_y
-            dy = 1
-        elif direction == "LEFT" : 
-            px = pulses_x
-            dx = 2
-        elif direction == "RIGHT": 
-            px = pulses_x
-            dx = 1
-
-        self.plc_thread.enqueue_move(dx, dy, px, py)
-
-    def toggle_warning(self, is_alarm:bool):
-        if is_alarm:
-            #alarm
-            self.img_label.setStyleSheet("background-color: #000000; border: 10px solid #E03C3C;")
-            #can add alarm sound
-        else:
-            #normal
-            self.img_label.setStyleSheet("background-color: #000000; border: 10px solid #222222;")
 
     # Inference result
-    def handle_inference_result(self, q_img, data):
-        if not q_img.isNull():
-            self.img_label.setPixmap(QPixmap.fromImage(q_img))
-        if data:
-            dx, dy, px, py = pixel_to_pulse(
-                data[0],
-                data[1],
-                self.setting_dock.pixel_input.value(), 
-                self.mm_per_pulses_x,
-                self.mm_per_pulses_y,
-                self.setting_dock.threshold_input.value()
-            )
-            self.plc_thread.enqueue_move(dx, dy, px, py)
+    def handle_inference_result(self, q_img):
+        self.img_label.setPixmap(QPixmap.fromImage(q_img))
 
-            self.log_dock.update_plot(data)
-            
-            alarm_distance = 0.5#float(self.setting_dock.alarm_input.value())
-            dis_pix = math.dist(data[0], data[1])
-            dis_mm = dis_pix * float(self.setting_dock.pixel_input.value())
-            
-            should_alarm = dis_mm > alarm_distance
-            if should_alarm != self.is_warning:
-                self.is_warning = should_alarm
-                self.toggle_warning(should_alarm)
+    def toggle_warning(self, should_alarm:bool):
+        if should_alarm:
+            # Alarm
+            self.img_label.setStyleSheet("background-color: #000000; border: 10px solid #E03C3C;")
+            # can add alarm sound
+        else:
+            # Normal
+            self.img_label.setStyleSheet("background-color: #000000; border: 10px solid #222222;")
 
     # Event
     def keyPressEvent(self, event):
@@ -298,20 +222,17 @@ class main_ui(QMainWindow):
             self.header.window_state_changed(self.windowState())
         super().changeEvent(event)
         event.accept()
-    
+
     def closeEvent(self, event):
         try:
             self.read_ui_to_cfg()
             save_json_config_atomic(self.cfg)
-        except: pass
-
-        self.infer_thread.stop()
-        self.plc_thread.stop()
-        if self.camera.is_running:
-            self.camera.stop_grabbing()
-        if self.camera.is_opened:
-            self.camera.close()
-        event.accept()
+            self.core.stop()
+            event.accept()
+            
+        except Exception as e:
+            print(f"UI: error while closing: {e}")
+            event.accept()
 
     def read_ui_to_cfg(self):
         cfg = self.cfg.copy()

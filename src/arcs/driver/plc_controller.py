@@ -1,10 +1,13 @@
 import socket
 import struct
 
+from PyQt5.QtCore import QObject
+
 from arcs.utils.config_manager import load_env_config
 
-class FX3U_PLC:
-    def __init__(self):
+class FX3U_PLC(QObject):
+    def __init__(self, parent=None):
+        super().__init__(parent)
         self.client = None
         self.ip = load_env_config().get("plc_ip")
         self.port = load_env_config().get("plc_port")
@@ -12,7 +15,7 @@ class FX3U_PLC:
         self.is_connected = False
         self.is_running = False
 
-    def connect(self):
+    def connect(self) -> bool:
         """
         Try connect PLC
         """
@@ -23,6 +26,7 @@ class FX3U_PLC:
             self.client = temp_client
             self.is_connected = True
             print("PLC Connected")
+            return True
         except (socket.timeout, ConnectionRefusedError, Exception) as e:
             print(f"Connect fail: {e}")
             # 確保失敗時 self.client 是 None
@@ -30,8 +34,9 @@ class FX3U_PLC:
                 temp_client.close()
             self.client = None 
             self.is_connected = False
+            return False
 
-    def run(self):
+    def run(self) -> bool:
         """
         PLC Remote RUN
         """
@@ -49,7 +54,7 @@ class FX3U_PLC:
             except Exception as e:
                 raise e
 
-    def stop(self):
+    def stop(self) -> bool:
         """
         PLC Remote STOP
         """
@@ -78,8 +83,10 @@ class FX3U_PLC:
             self.client = None
             print("PLC Disconnected")
 
-    def write_D(self, D_start: int, D_point:int, values: list):
-        # write in register
+    def write_D(self, D_start: int, D_point:int, values: list) -> bool:
+        """
+        Write values to D registers
+        """
         data_to_write = b''
         for val in values:
             data_to_write += struct.pack('<H', val)
@@ -94,5 +101,19 @@ class FX3U_PLC:
         except Exception as e:
             raise e
 
-    def read(self):
-        pass
+    def read_M(self, M_number: int) -> int:
+        """
+        Read a single M register
+        """
+        number = struct.pack("<I", M_number)
+        frame = b'\x00\xFF\x0A\x00' + number + b'\x20\x4D\x01\x00'
+        try:
+            self.client.sendall(frame)
+            response = self.client.recv(1024)
+            if response == b'\x80\x00\x10':
+                return 1
+            elif response == b'\x80\x00\x00':
+                return 0
+        except Exception as e:
+            raise e
+        
