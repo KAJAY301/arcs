@@ -66,6 +66,7 @@ class Camera(QObject):
 
             try:
                 #self.pylon_camera.PixelFormat.SetValue(camera_param.get('Pixel_format'))
+                #self.pylon_camera.GevSCPSPacketSize.SetValue(9014)
                 self.pylon_camera.PixelFormat.SetValue("RGB8")
                 self.pylon_camera.ReverseX.SetValue(camera_param.get('reverse_x'))
                 self.pylon_camera.Width.SetValue(camera_param.get('width'))
