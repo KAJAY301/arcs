@@ -14,12 +14,12 @@ from arcs.utils.config_manager import load_json_config, load_env_config
 class MainCore(QObject):
     """
     Core logic handler for the application.  
-    Manages camera, PLC communication, and inference processing.
+    Manages camera, PLC communication, and Inference processing.
     """
-    # Signal to UI
+    # === Signals to UI === #
     frame_ready = pyqtSignal(QImage)
-    alarm_trigger = pyqtSignal(bool)
     log_data = pyqtSignal(list)
+    alarm_trigger = pyqtSignal(bool)
     status_msg = pyqtSignal(str)
     error_occurred = pyqtSignal(str, str)
 
@@ -55,13 +55,13 @@ class MainCore(QObject):
         self.plc_thread.start()
         self.inference_thread.start()
 
-    def update_system_parameters(self, ui_input: dict):
+    def update_system_parameters(self, ui_input: dict) -> None:
         """
         Update parameters from UI input to InferenceThread and Camera.  
         ui_input = {  
                 'length_cm_input': length_cm_input,  
-                'speed_input': speed_input,  
-                'pixel_input': pixel_input,  
+                'speed_input'    : speed_input,  
+                'pixel_input'    : pixel_input,  
                 'threshold_input': threshold_input  
             }
         """
@@ -74,7 +74,7 @@ class MainCore(QObject):
             self.error_occurred.emit("Synced Parameters Failed", str(e))
                                  
     # Buttom
-    def toggle_camera(self, checked):
+    def toggle_camera(self, checked: bool) -> bool:
         if checked:
             if not self.camera.is_opened:
                 try:
@@ -98,7 +98,7 @@ class MainCore(QObject):
                 self.error_occurred.emit("Camera Stop Failed", str(e))
                 return False
             
-    def toggle_detection(self, checked):
+    def toggle_detection(self, checked: bool) -> bool:
         if checked:
             self.inference_thread.is_detacting = True
             return True
@@ -106,7 +106,7 @@ class MainCore(QObject):
             self.inference_thread.is_detacting = False
             return True
         
-    def toggle_control(self, checked):
+    def toggle_control(self, checked: bool) -> bool:
         if checked:
             self.inference_thread.auto_control = True
             return True
@@ -114,7 +114,8 @@ class MainCore(QObject):
             self.inference_thread.auto_control = False
             return True
 
-    def manual_move(self, direction: str):
+    def manual_move(self, direction: str) -> None:
+        """ Manual move command to PLC based on direction. """
         dx, dy, px, py = 2, 2, 0, 0
 
         if   direction == "UP"   : 
@@ -133,7 +134,7 @@ class MainCore(QObject):
         self.plc_thread.enqueue_move(dx, dy, px, py)
 
     # Data processing
-    def process_inference_data(self, q_img: QImage, data: list):
+    def process_inference_data(self, q_img: QImage, data: list) -> None:
         """
         Process inference data and emit signals to UI.  
         """
@@ -150,7 +151,7 @@ class MainCore(QObject):
                 self.is_warning = should_alarm
                 self.alarm_trigger.emit(should_alarm)
 
-    def stop(self):
+    def stop(self) -> None:
         if hasattr(self, 'infer_thread') and self.infer_thread.isRunning():
             self.inference_thread.stop()
             self.inference_thread.wait()

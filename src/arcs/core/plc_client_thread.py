@@ -1,6 +1,7 @@
+import time
+
 from PyQt5.QtCore import QThread, pyqtSignal
 from queue import Queue, Empty
-import time
 
 from arcs.driver.plc_controller import FX3U_PLC
 
@@ -16,7 +17,11 @@ class PLCClientThread(QThread):
         self.command_q = Queue(maxsize=2)
         self.running = True
         
-    def enqueue_move(self, dx, dy, px, py):
+    def enqueue_move(self, dx: int, dy: int, px: int, py: int) -> bool:
+        """
+        Enqueue a move command to the PLC.  
+        Returns True if successful, False if queue is full.  
+        """
         try:
             self.command_q.put_nowait((dx, dy, px, py))
             return True
@@ -46,10 +51,11 @@ class PLCClientThread(QThread):
             except Empty:
                 continue
             
-            # Send Data
+            # Check state, Send Data
             try:
                 state = self.plc.read_M(10)
                 if state == 1:
+                    # Plc Busy
                     continue
                 elif state == 0:
                     success = self.plc.write_D(100, 4, [dx, dy, px, py])
