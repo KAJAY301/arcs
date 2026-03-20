@@ -29,6 +29,8 @@ class Camera(QObject):
         """
         Start the camera and begin grabbing frames.
         """
+        # GrabStrategy_LatestImageOnly: Return the latest image
+        # GrabStrategy_UpcomingImage: Reture the next image after calling
         self.pylon_camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly)
         self.camera_timer.start(50) 
         self.is_running = True
@@ -53,9 +55,10 @@ class Camera(QObject):
         """
         Update camera parameters based on UI input and config.json.
         """
+        if not self.is_opened:
+            self.open()
         try:
             camera_param = self.cfg.get('camera')
-
             cm_value     = ui_input.get('length_cm_input')     #cm
             speed_value  = ui_input.get('speed_input')         #m/min
             pixel_value  = ui_input.get('pixel_input')         #mm  

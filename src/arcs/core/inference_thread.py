@@ -18,24 +18,25 @@ class InferenceThread(QThread):
     ui_signal = pyqtSignal(QImage, list)
     plc_command_signal = pyqtSignal(int, int, int, int)
 
-    def __init__(self, parent=None):#, first_model_path, second_model_path, conf_thresh, iou_thresh, display_size
+    def __init__(self, parent=None):
         super().__init__(parent)
 
+        # Parameters
         cfg = load_json_config()
         first_model = cfg.get('inference').get('first_model')
         second_model = cfg.get('inference').get('second_model')
-        conf_thresh = cfg.get('inference').get('conf_threshold')
-        iou_thresh = cfg.get('inference').get('iou_threshold')
+        self.conf = cfg.get('inference').get('conf_threshold')
+        self.iou = cfg.get('inference').get('iou_threshold')
 
         first_model_path = load_model_path(first_model)
         second_model_path = load_model_path(second_model)
-        
         self.first_model = YOLO(first_model_path)
         self.second_model = YOLO(second_model_path)
-        self.conf = conf_thresh
-        self.iou = iou_thresh
+
+        # Frame Queue
         self.frame_q = Queue(maxsize=2)
 
+        # Unidentifyed image saving
         self.save_dir = "data/no_match_img"
         self.max_save_count = 2000
         self.last_save_time = 0
@@ -65,7 +66,7 @@ class InferenceThread(QThread):
             except: pass
         self.frame_q.put(frame)
 
-    def first_inference(self, frame):
+    def first_inference(self, frame) -> tuple:
         try:
             cx, cy = None, None
             results = self.first_model.predict(
@@ -84,7 +85,7 @@ class InferenceThread(QThread):
         except Exception as e:
             print(f"First Infer Error: {e}")
 
-    def second_inference(self, img):
+    def second_inference(self, img) -> tuple:
         """
         **Return:** \n
         pt = [ [(x1, y1)] , [(x2, y2)] ] \n

@@ -152,7 +152,7 @@ class MainCore(QObject):
                 self.alarm_trigger.emit(should_alarm)
 
     def stop(self) -> None:
-        if hasattr(self, 'infer_thread') and self.infer_thread.isRunning():
+        if hasattr(self, 'inference_thread') and self.inference_thread.isRunning():
             self.inference_thread.stop()
             self.inference_thread.wait()
 
