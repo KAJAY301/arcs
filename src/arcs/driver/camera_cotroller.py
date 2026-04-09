@@ -96,5 +96,27 @@ class Camera(QObject):
                 res.Release()
             except Exception:
                 pass
+"""
+        class MyCameraHandler(pylon.ImageEventHandler):
+            def __init__(self, yolo_thread):
+                super().__init__()
+                self.yolo_thread = yolo_thread
 
+            def OnImageGrabbed(self, camera, grabResult):
+                if grabResult.GrabSucceeded():
+                    img = grabResult.Array
+                    self.yolo_thread.submit_frame(img)
+                else:
+                    print(f"抓取失敗: {grabResult.ErrorCode}")
+        self.handler = MyCameraHandler(self.yolo_thread)
+        self.pylon_camera.RegisterImageEventHandler(
+            self.handler, 
+            pylon.RegistrationMode_ReplaceAll, 
+            pylon.Cleanup_Delete
+        )
+        self.pylon_camera.StartGrabbing(
+            pylon.GrabStrategy_LatestImageOnly, 
+            pylon.GrabLoop_ProvidedByInstantCamera
+        )
+"""
     

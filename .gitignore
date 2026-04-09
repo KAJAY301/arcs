@@ -18,6 +18,8 @@ test/model_result
 test/test_img
 test/first_model_result
 test/second_model_result
+test/640img
 test/test_img/*.jpg
 test/first_model_result/*.jpg
 test/second_model_result/*.jpg
+test/640img/*.jpg

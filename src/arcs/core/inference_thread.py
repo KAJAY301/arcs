@@ -224,7 +224,7 @@ class InferenceThread(QThread):
             
             # Cut image to 640x640
             img = self.cut_img(frame, cx, cy, size_x=640, size_y=640)
-            # If not detecting, just send the image back
+            # If not detecting, just send the image back to ui
             if not self.is_detacting:
                 q_img = cv2_to_qimage(img)
                 self.ui_signal.emit(q_img, [])
@@ -234,7 +234,7 @@ class InferenceThread(QThread):
             coordinate = self.second_inference(img)
             first_points_list = coordinate[0]
             second_points_list = coordinate[1]
-            # If no points detected, save image and send back
+            # If no points detected, save image and send back to ui
             if not first_points_list or not second_points_list:
                 self.save_img(img)
                 q_img = cv2_to_qimage(img)
@@ -259,9 +259,6 @@ class InferenceThread(QThread):
                                     self.deadband_mm
                                 )
                 self.plc_command_signal.emit(dx, dy, px, py)
-
-                
-            
 
     def stop(self):
         self.running = False

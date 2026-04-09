@@ -83,6 +83,7 @@ class MainUi(QMainWindow):
         self.img_label.setAlignment(Qt.AlignCenter)
         self.img_label.setStyleSheet("background-color: #000000; border: 10px solid #222222;")
         main_layout.addWidget(self.img_label, stretch=1)
+        #view_menu.addAction(self.img_label.toggleViewAction())
 
         # Monitor Dock
         self.monitor_dock = MonitorDock(self)
