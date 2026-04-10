@@ -6,7 +6,7 @@ from arcs.utils.config_manager import load_json_config
 
 class SettingDock(QDockWidget):
     def __init__(self, parent=None):
-        super().__init__("Setting", parent)
+        super().__init__("Basic Setting", parent)
         left_widget = QWidget()
         self.setWidget(left_widget)
         left_layout = QVBoxLayout(left_widget)

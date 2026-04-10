@@ -14,7 +14,7 @@ class CustomTitleBar(QWidget):
         super().__init__(parent)
         self.setFixedHeight(title_bar_height) 
         self.setStyleSheet("""
-            background-color: #222222;
+            background-color: #111111;
         """)
         layout = QHBoxLayout(self)
         layout.setContentsMargins(1, 1, 1, 1)

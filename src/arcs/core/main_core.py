@@ -133,6 +133,20 @@ class MainCore(QObject):
 
         self.plc_thread.enqueue_move(dx, dy, px, py)
 
+    # Change Mode
+    def set_display_mode(self, mode: str) -> None:
+        """ Set display mode for UI. """
+        self.inference_thread.display_mode = mode
+
+    def set_first_inference_model(self, model: str) -> None:
+        """ Set first inference model. """
+        self.inference_thread.first_inference_model = model
+
+    def set_second_inference_model(self, model: str) -> None:
+        """ Set second inference model. """
+        self.inference_thread.second_inference_model = model
+
+
     # Data processing
     def process_inference_data(self, q_img: QImage, data: list) -> None:
         """
@@ -151,6 +165,7 @@ class MainCore(QObject):
                 self.is_warning = should_alarm
                 self.alarm_trigger.emit(should_alarm)
 
+    # Stop
     def stop(self) -> None:
         if hasattr(self, 'inference_thread') and self.inference_thread.isRunning():
             self.inference_thread.stop()

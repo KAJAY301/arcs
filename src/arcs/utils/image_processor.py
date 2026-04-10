@@ -21,9 +21,19 @@ def cv2_to_qimage(cv_img):
     """
     Convert from an OpenCV image to QImage
     """
-    h, w, ch = cv_img.shape
+    if len(cv_img.shape) == 3:
+        h, w, ch = cv_img.shape
+    else:
+        h, w = cv_img.shape
+        ch = 1
+
     bytes_per_line = ch * w
-    return QImage(cv_img.data, w, h, bytes_per_line, QImage.Format_RGB888).copy()
+
+    if ch == 3:
+        return QImage(cv_img.data, w, h, bytes_per_line, QImage.Format_RGB888).copy()
+    
+    elif ch == 1:
+        return QImage(cv_img.data, w, h, bytes_per_line, QImage.Format_Grayscale8).copy()
 
 def save_image_timed(img, base_path):
     """

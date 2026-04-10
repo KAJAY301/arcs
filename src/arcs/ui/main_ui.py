@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, 
+    QMainWindow, QMenu, QWidget, QVBoxLayout, 
     QLabel, QSizePolicy, QMessageBox, 
     QSpinBox, QDoubleSpinBox, QLineEdit
     )
@@ -45,10 +45,6 @@ class MainUi(QMainWindow):
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
 
-        # Menu Bar
-        menu_bar = self.menuBar()
-        view_menu = menu_bar.addMenu(" View ")
-
         # Status Bar
         self.status_bar = self.statusBar()
         self.status_bar.showMessage("Ready")
@@ -57,7 +53,6 @@ class MainUi(QMainWindow):
         self.setting_dock = SettingDock(self)
         self.setting_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.setting_dock)
-        view_menu.addAction(self.setting_dock.toggleViewAction())
 
         self.setting_dock.length_cm_input.editingFinished.connect(self.sync_ui_params)
         self.setting_dock.length_inch_input.editingFinished.connect(self.sync_ui_params)
@@ -78,18 +73,17 @@ class MainUi(QMainWindow):
         main_layout = QVBoxLayout(self.central_widget)
         main_layout.setAlignment(Qt.AlignCenter)
         
-        self.img_label = QLabel("Camera Feed")
+        self.img_label = QLabel("Camera Offline")
         self.img_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.img_label.setAlignment(Qt.AlignCenter)
         self.img_label.setStyleSheet("background-color: #000000; border: 10px solid #222222;")
         main_layout.addWidget(self.img_label, stretch=1)
-        #view_menu.addAction(self.img_label.toggleViewAction())
 
         # Monitor Dock
         self.monitor_dock = MonitorDock(self)
         self.monitor_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
         self.addDockWidget(Qt.RightDockWidgetArea, self.monitor_dock)
-        view_menu.addAction(self.monitor_dock.toggleViewAction())
+        
         self.monitor_dock.hide()
 
         # Log Dock
@@ -97,8 +91,49 @@ class MainUi(QMainWindow):
         self.log_dock.setAllowedAreas(Qt.BottomDockWidgetArea)
         self.log_dock.setMaximumHeight(250)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.log_dock)
-        view_menu.addAction(self.log_dock.toggleViewAction())
         self.log_dock.hide()
+
+        # Menu Bar
+        menu_bar = self.menuBar()
+            # View Menu
+        view_menu = menu_bar.addMenu(" View ")
+        view_menu.addAction(self.setting_dock.toggleViewAction())
+        view_menu.addAction(self.monitor_dock.toggleViewAction())
+        view_menu.addAction(self.log_dock.toggleViewAction())
+        #add a action which can change the camera feed
+        #e.g., no feed, raw feed, first inference result, yolo result, cv2 result, etc
+        settings_submenu = QMenu('Image', self)
+        view_menu.addMenu(settings_submenu)
+        settings_submenu.addAction("Close", lambda: self.core.set_display_mode("close"))
+        settings_submenu.addAction("Raw", lambda: self.core.set_display_mode("raw"))
+        settings_submenu.addAction("Zoom in", lambda: self.core.set_display_mode("zoom_in"))
+        #settings_submenu.addAction("Zoom in + Center", lambda: self.core.set_display_mode("zoom_in_center"))
+        settings_submenu.addAction("CV2-gray", lambda: self.core.set_display_mode("cv2_gray"))
+        settings_submenu.addAction("CV2-binary", lambda: self.core.set_display_mode("cv2_binary"))
+        settings_submenu.addAction("CV2-horizon", lambda: self.core.set_display_mode("cv2_horizon"))
+        settings_submenu.addAction("CV2-vertical", lambda: self.core.set_display_mode("cv2_vertical"))
+
+
+            # Inference Menu
+        inference_menu = menu_bar.addMenu(" Inference ")
+        # can choose different inference models in the future
+        # e.g., YOLOv8, YOLOv11, CV2, etc
+        first_inference_submenu = QMenu('First Inference', self)
+        inference_menu.addMenu(first_inference_submenu)
+        first_inference_submenu.addAction("YOLOv8", lambda: self.core.set_first_inference_model("yolo_v8"))
+        #first_inference_submenu.addAction("YOLOv11", lambda: self.core.set_first_inference_model("yolo_v11"))
+        #first_inference_submenu.addAction("CV2", lambda: self.core.set_first_inference_model("cv2"))
+        second_inference_submenu = QMenu('Second Inference', self)
+        inference_menu.addMenu(second_inference_submenu)
+        second_inference_submenu.addAction("YOLOv11 Box", lambda: self.core.set_second_inference_model("yolo_v11_box"))
+        second_inference_submenu.addAction("YOLOv11 Pose", lambda: self.core.set_second_inference_model("yolo_v11_pose"))
+        second_inference_submenu.addAction("CV2", lambda: self.core.set_second_inference_model("cv2"))
+
+            # Calibration Menu
+        calibration_menu = menu_bar.addMenu(" Calibration ")
+        # Color calibration
+        # distance calibration, etc
+
 
     def init_media(self):
         # image, sound initializations
