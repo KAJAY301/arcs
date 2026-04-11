@@ -32,6 +32,7 @@ class MonitorDock(QDockWidget):
 
         self.param_display = QTextEdit()
         self.param_display.setReadOnly(True)
+        self.param_display.setLineWrapMode(QTextEdit.NoWrap)
         self.param_display.setStyleSheet("""
             QTextEdit {
                 background-color: transparent;
@@ -52,32 +53,79 @@ class MonitorDock(QDockWidget):
         exposure_us  = max(1, int(1e6 / line_rate_hz))         #us
         target_height= int((cm_value*10) / pixel_value)        #pixels
 
-        display_mode = "Zoom in"# Temporary
+        mode = "Zoom in"# Temporary
+        size = "640*640"
+        f_model = "YOLOv8n"
+        f_iou = 0.5
+        f_conf = 0.5
+        s_model = "CV2"
+        s_iou = 0.5
+        s_conf = 0.5# Temporary
 
         html_content = f"""
             <div style="color: #AAAAAA; font-size: 16px; font-family: 'Consolas';">
-                <b>Camera params:</b>
                 <table style="width: 100%; border: none;">
                     <tr>
-                        <td>&nbsp;&nbsp;Line Rate</td>
+                        <td colspan="2"><b>Camera params:</b></td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp;&nbsp;Line Rate&nbsp;</td>
                         <td style="text-align: right;">{line_rate_hz:.2f} Hz</td>
                     </tr>
                     <tr>
-                        <td>&nbsp;&nbsp;Exposure Time</td>
+                        <td>&nbsp;&nbsp;Exposure Time&nbsp;</td>
                         <td style="text-align: right;">{exposure_us} us</td>
                     </tr>
                     <tr>
-                        <td>&nbsp;&nbsp;Height</td>
+                        <td>&nbsp;&nbsp;Height&nbsp;</td>
                         <td style="text-align: right;">{target_height} pix</td>
                     </tr>
                     <tr>
-                        <td>&nbsp;&nbsp;Width</td>
+                        <td>&nbsp;&nbsp;Width&nbsp;</td>
                         <td style="text-align: right;">{self.width} pix</td>
                     </tr>
+                    <tr>
+                        <td colspan="2"><b>Display:</b></td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp;&nbsp;Mode&nbsp;</td>
+                        <td style="text-align: right;">{mode}</td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp;&nbsp;Size&nbsp;</td>
+                        <td style="text-align: right;">{size} pix</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2"><b>First Inference:</b></td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp;&nbsp;Model&nbsp;</td>
+                        <td style="text-align: right;">{f_model}</td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp;&nbsp;Iou&nbsp;</td>
+                        <td style="text-align: right;">{f_iou}</td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp;&nbsp;Conf&nbsp;</td>
+                        <td style="text-align: right;">{f_conf}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2"><b>Second Inference:</b></td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp;&nbsp;Model&nbsp;</td>
+                        <td style="text-align: right;">{s_model}</td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp;&nbsp;Iou&nbsp;</td>
+                        <td style="text-align: right;">{s_iou}</td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp;&nbsp;Conf&nbsp;</td>
+                        <td style="text-align: right;">{s_conf}</td>
+                    </tr>
                 </table>
-                <br>
-                <b>Display mode:</b><br>
-                &nbsp;&nbsp;{display_mode}
             </div>
         """
         self.param_display.setHtml(html_content)
