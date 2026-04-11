@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (
-    QMainWindow, QMenu, QWidget, QVBoxLayout, 
+    QAction, QActionGroup, QMainWindow, QMenu, QWidget, QVBoxLayout, 
     QLabel, QSizePolicy, QMessageBox, 
     QSpinBox, QDoubleSpinBox, QLineEdit
     )
@@ -95,39 +95,39 @@ class MainUi(QMainWindow):
 
         # Menu Bar
         menu_bar = self.menuBar()
+
             # View Menu
         view_menu = menu_bar.addMenu(" View ")
         view_menu.addAction(self.setting_dock.toggleViewAction())
         view_menu.addAction(self.monitor_dock.toggleViewAction())
         view_menu.addAction(self.log_dock.toggleViewAction())
-        #add a action which can change the camera feed
-        #e.g., no feed, raw feed, first inference result, yolo result, cv2 result, etc
+        
+            # Display Mode Submenu
         settings_submenu = QMenu('Image', self)
         view_menu.addMenu(settings_submenu)
-        settings_submenu.addAction("Close", lambda: self.core.set_display_mode("close"))
-        settings_submenu.addAction("Raw", lambda: self.core.set_display_mode("raw"))
-        settings_submenu.addAction("Zoom in", lambda: self.core.set_display_mode("zoom_in"))
-        #settings_submenu.addAction("Zoom in + Center", lambda: self.core.set_display_mode("zoom_in_center"))
-        settings_submenu.addAction("CV2-gray", lambda: self.core.set_display_mode("cv2_gray"))
-        settings_submenu.addAction("CV2-binary", lambda: self.core.set_display_mode("cv2_binary"))
-        settings_submenu.addAction("CV2-horizon", lambda: self.core.set_display_mode("cv2_horizon"))
-        settings_submenu.addAction("CV2-vertical", lambda: self.core.set_display_mode("cv2_vertical"))
 
+        settings_submenu.addAction("Close", lambda: self.set_display_mode("close"))
+        settings_submenu.addAction("Raw", lambda: self.set_display_mode("raw"))
+        settings_submenu.addAction("Zoom in", lambda: self.set_display_mode("zoom_in"))
+        settings_submenu.addAction("CV2-gray", lambda: self.set_display_mode("cv2_gray"))
+        settings_submenu.addAction("CV2-binary", lambda: self.set_display_mode("cv2_binary"))
+        settings_submenu.addAction("CV2-horizon", lambda: self.set_display_mode("cv2_horizon"))
+        settings_submenu.addAction("CV2-vertical", lambda: self.set_display_mode("cv2_vertical"))
 
             # Inference Menu
         inference_menu = menu_bar.addMenu(" Inference ")
-        # can choose different inference models in the future
-        # e.g., YOLOv8, YOLOv11, CV2, etc
+
+                #first inference model
         first_inference_submenu = QMenu('First Inference', self)
         inference_menu.addMenu(first_inference_submenu)
-        first_inference_submenu.addAction("YOLOv8", lambda: self.core.set_first_inference_model("yolo_v8"))
-        #first_inference_submenu.addAction("YOLOv11", lambda: self.core.set_first_inference_model("yolo_v11"))
-        #first_inference_submenu.addAction("CV2", lambda: self.core.set_first_inference_model("cv2"))
+        first_inference_submenu.addAction("YOLOv8", lambda: self.set_first_inference_model("yolo_v8"))
+        
+                # second inference model
         second_inference_submenu = QMenu('Second Inference', self)
         inference_menu.addMenu(second_inference_submenu)
-        second_inference_submenu.addAction("YOLOv11 Box", lambda: self.core.set_second_inference_model("yolo_v11_box"))
-        second_inference_submenu.addAction("YOLOv11 Pose", lambda: self.core.set_second_inference_model("yolo_v11_pose"))
-        second_inference_submenu.addAction("CV2", lambda: self.core.set_second_inference_model("cv2"))
+        second_inference_submenu.addAction("YOLOv11 Box", lambda: self.set_second_inference_model("yolo_v11_box"))
+        second_inference_submenu.addAction("YOLOv11 Pose", lambda: self.set_second_inference_model("yolo_v11_pose"))
+        second_inference_submenu.addAction("CV2", lambda: self.set_second_inference_model("cv2"))
 
             # Calibration Menu
         calibration_menu = menu_bar.addMenu(" Calibration ")
@@ -191,6 +191,46 @@ class MainUi(QMainWindow):
             return
         text = "Auto Control" if checked else "Manual Control"
         self.setting_dock.control_btn.setText(text)    
+
+
+    # Change Mode
+    def set_display_mode(self, mode: str):
+            print(f"Switching display mode to {mode}")
+            if mode in ["cv2_gray", "cv2_binary", "cv2_horizon", "cv2_vertical"] and self.core.inference_thread.second_inference_model in ["yolo_v11_box", "yolo_v11_pose"]:
+                reply = QMessageBox.question(
+                    self, 
+                    'Switch Inference Model', 
+                    "You need to use CV2 as second inference model to use CV2 display mode. \n\n"
+                    "Do you want to switch second inference model to CV2?",
+                    QMessageBox.Yes | QMessageBox.No, 
+                    QMessageBox.No
+                )
+                if reply == QMessageBox.Yes:
+                    self.core.set_second_inference_model("cv2")
+                    self.core.set_display_mode(mode)
+            else:
+                self.core.set_display_mode(mode)
+            
+    def set_first_inference_model(self, model: str):
+            print(f"Switching first inference model to {model}")
+            self.core.set_first_inference_model(model)
+    
+    def set_second_inference_model(self, model: str):
+            print(f"Switching second inference model to {model}")
+            if model in ["yolo_v11_box", "yolo_v11_pose"] and self.core.inference_thread.display_mode in ["cv2_gray", "cv2_binary", "cv2_horizon", "cv2_vertical"]:
+                reply = QMessageBox.question(
+                    self, 
+                    'Switch Display Mode', 
+                    "YOLO Models don't support CV2 display modes. \n\n"
+                    "Do you want to switch display mode to Zoom in?",
+                    QMessageBox.Yes | QMessageBox.No, 
+                    QMessageBox.No
+                )
+                if reply == QMessageBox.Yes:
+                    self.core.set_display_mode("zoom_in")
+                    self.core.set_second_inference_model(model)
+            else:
+                self.core.set_second_inference_model(model)
 
 
     # Inference result

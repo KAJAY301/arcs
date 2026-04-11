@@ -66,7 +66,6 @@ class InferenceThread(QThread):
         self.white_bgr = np.array([26, 39, 42]) #白色的標準BGR值
         self.color_threshold = 10               #容許偏差
 
-
     def update_params(self, ui_intput: dict) -> None:
         self.pixel_size = ui_intput.get('pixel_input')
         self.deadband_mm = ui_intput.get('threshold_input')
@@ -318,6 +317,7 @@ class InferenceThread(QThread):
                 if self.display_mode == "close":
                     continue
                 if self.display_mode == "raw":
+                    # Need to resize raw frame
                     q_img = cv2_to_qimage(frame)
                     self.ui_signal.emit(q_img, [])
                     continue
@@ -329,10 +329,17 @@ class InferenceThread(QThread):
             # Second inference
             first_points, second_points, processed_img = self.second_inference(img)
 
-            # If no points detected, save image and send back to ui
+            # If no points detected, send img back to ui
             if first_points is None or second_points is None:
-                q_img = cv2_to_qimage(processed_img)
-                self.ui_signal.emit(q_img, [])
+                if self.display_mode == "close":
+                    return_ui_img = None
+                elif self.display_mode == "raw":
+                    return_ui_img = cv2_to_qimage(frame)
+                else:
+                    return_ui_img = cv2_to_qimage(processed_img)
+
+                self.ui_signal.emit(return_ui_img, [])
+
                 continue
       
             # Send drawed image
@@ -341,8 +348,15 @@ class InferenceThread(QThread):
                 cv2.circle(processed_img, first_points, 2, (255, 255, 255), -1)
                 cv2.circle(processed_img, second_points, 2, (0, 0, 255), -1)
             """
-            q_img = cv2_to_qimage(img)
-            self.ui_signal.emit(q_img, [first_points, second_points])
+
+            if self.display_mode == "close":
+                return_ui_img = None
+            elif self.display_mode == "raw":
+                return_ui_img = cv2_to_qimage(frame)
+            else:
+                return_ui_img = cv2_to_qimage(processed_img)
+
+            self.ui_signal.emit(return_ui_img, [first_points, second_points])
 
             # Send data to PLC if auto_control is enabled
             if self.auto_control:
