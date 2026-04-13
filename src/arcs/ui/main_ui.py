@@ -10,6 +10,7 @@ from arcs.ui.custom_title_bar import CustomTitleBar, title_bar_height
 from arcs.ui.log_dock import LogDock
 from arcs.ui.setting_dock import SettingDock
 from arcs.ui.monitor_dock import MonitorDock
+from arcs.ui.color_setting_dock import ColorSettingDock
 
 from arcs.utils.config_manager import load_json_config, save_json_config_atomic
 
@@ -31,10 +32,14 @@ class MainUi(QMainWindow):
         self.init_ui()
         self.init_media()
         self.sync_ui_params()
+        self.update_color()
 
         # Parameters initialization
         self.initial_pos = None
         self.cfg = load_json_config()
+        
+        # Start in fullscreen
+        self.showFullScreen()
 
     def init_ui(self):
         # Header
@@ -49,7 +54,7 @@ class MainUi(QMainWindow):
         self.status_bar = self.statusBar()
         self.status_bar.showMessage("Ready")
 
-        # Left Dock Widget
+        # Setting Dock Widget
         self.setting_dock = SettingDock(self)
         self.setting_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.setting_dock)
@@ -68,6 +73,16 @@ class MainUi(QMainWindow):
         self.setting_dock.btn_down.clicked.connect(lambda: self.core.manual_move("DOWN"))
         self.setting_dock.btn_left.clicked.connect(lambda: self.core.manual_move("LEFT"))
         self.setting_dock.btn_right.clicked.connect(lambda: self.core.manual_move("RIGHT"))
+
+        # Color setting Dock Widget
+        self.color_setting_dock = ColorSettingDock(self)
+        self.color_setting_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.color_setting_dock)
+
+        self.color_setting_dock.b_input.valueChanged.connect(self.update_color)
+        self.color_setting_dock.g_input.valueChanged.connect(self.update_color)
+        self.color_setting_dock.r_input.valueChanged.connect(self.update_color)
+        self.color_setting_dock.binary_input.valueChanged.connect(self.update_color)
 
         # Main panel
         main_layout = QVBoxLayout(self.central_widget)
@@ -99,6 +114,7 @@ class MainUi(QMainWindow):
             # View Menu
         view_menu = menu_bar.addMenu(" View ")
         view_menu.addAction(self.setting_dock.toggleViewAction())
+        view_menu.addAction(self.color_setting_dock.toggleViewAction())
         view_menu.addAction(self.monitor_dock.toggleViewAction())
         view_menu.addAction(self.log_dock.toggleViewAction())
         
@@ -134,7 +150,6 @@ class MainUi(QMainWindow):
         # Color calibration
         # distance calibration, etc
 
-
     def init_media(self):
         # image, sound initializations
         pass
@@ -161,6 +176,25 @@ class MainUi(QMainWindow):
             print(f"Error syncing UI params: {e}")
             pass
 
+    def update_color(self):
+        try:
+            b_value = self.color_setting_dock.b_input.value()
+            g_value = self.color_setting_dock.g_input.value()
+            r_value = self.color_setting_dock.r_input.value()
+            binary_value = self.color_setting_dock.binary_input.value()
+
+            style = f"background-color: rgb({r_value}, {g_value}, {b_value}); border: 1px solid black; border-radius: 10px;"
+            self.color_setting_dock.color_preview.setStyleSheet(style)
+            # update inference parameters(BGR and binary threshold)
+            self.core.update_color_parameters({
+                'white_b': b_value,
+                'white_g': g_value,
+                'white_r': r_value,
+                'binary_threshold': binary_value
+            })
+        except:
+            pass
+
     # Toggle
     def toggle_camera(self, checked):
         success = self.core.toggle_camera(checked)
@@ -169,9 +203,9 @@ class MainUi(QMainWindow):
             self.setting_dock.start_btn.setChecked(not checked)
             self.setting_dock.start_btn.blockSignals(False)
             return
-        text = "Stop Camera" if checked else "Start Camera"
+        text = "Camera Running" if checked else "Camera Stopped"
         self.setting_dock.start_btn.setText(text)
-
+    
     def toggle_detection(self, checked):
         success = self.core.toggle_detection(checked)
         if not success:
@@ -179,9 +213,9 @@ class MainUi(QMainWindow):
             self.setting_dock.detect_btn.setChecked(not checked)
             self.setting_dock.detect_btn.blockSignals(False)
             return
-        text = "Stop Detect" if checked else "Start Detect"
+        text = "Detection Running" if checked else "Detection Stopped"
         self.setting_dock.detect_btn.setText(text)
-
+    
     def toggle_control(self, checked):
         success = self.core.toggle_control(checked)
         if not success:
@@ -192,22 +226,36 @@ class MainUi(QMainWindow):
         text = "Auto Control" if checked else "Manual Control"
         self.setting_dock.control_btn.setText(text)    
 
-
     # Change Mode
     def set_display_mode(self, mode: str):
             print(f"Switching display mode to {mode}")
-            if mode in ["cv2_gray", "cv2_binary", "cv2_horizon", "cv2_vertical"] and self.core.inference_thread.second_inference_model in ["yolo_v11_box", "yolo_v11_pose"]:
-                reply = QMessageBox.question(
-                    self, 
-                    'Switch Inference Model', 
-                    "You need to use CV2 as second inference model to use CV2 display mode. \n\n"
-                    "Do you want to switch second inference model to CV2?",
-                    QMessageBox.Yes | QMessageBox.No, 
-                    QMessageBox.No
-                )
-                if reply == QMessageBox.Yes:
-                    self.core.set_second_inference_model("cv2")
-                    self.core.set_display_mode(mode)
+            if mode in ["cv2_gray", "cv2_binary", "cv2_horizon", "cv2_vertical"]:
+                if self.core.inference_thread.second_inference_model in ["yolo_v11_box", "yolo_v11_pose"]:
+                    reply = QMessageBox.question(
+                        self, 
+                        'Switch Inference Model', 
+                        "You need to use CV2 as second inference model to use CV2 display mode. \n\n"
+                        "Do you want to switch second inference model to CV2?",
+                        QMessageBox.Yes | QMessageBox.No, 
+                        QMessageBox.No
+                    )
+                    if reply == QMessageBox.Yes:
+                        self.core.set_second_inference_model("cv2")
+                        self.core.set_display_mode(mode)
+
+                if not self.core.inference_thread.is_detecting:
+                    reply = QMessageBox.question(
+                        self,
+                        'Start Detection',
+                        "You need to start detection to use CV2 display mode. \n\n"
+                        "Do you want to start detection?",
+                        QMessageBox.Yes | QMessageBox.No,
+                        QMessageBox.No
+                    )
+                    if reply == QMessageBox.Yes:
+                        self.toggle_detection(True)
+                        self.setting_dock.detect_btn.setChecked(True)
+                        self.core.set_display_mode(mode)
             else:
                 self.core.set_display_mode(mode)
             
@@ -231,7 +279,6 @@ class MainUi(QMainWindow):
                     self.core.set_second_inference_model(model)
             else:
                 self.core.set_second_inference_model(model)
-
 
     # Inference result
     def handle_inference_result(self, q_img):

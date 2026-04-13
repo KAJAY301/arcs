@@ -72,6 +72,29 @@ class MainCore(QObject):
             self.status_msg.emit("Synced Parameters Successfully")
         except Exception as e:
             self.error_occurred.emit("Synced Parameters Failed", str(e))
+
+    def update_color_parameters(self, color_input: dict) -> None:
+        """
+        Update color parameters from UI input to InferenceThread.  
+        color_input = {  
+                'white_b': b_value,  
+                'white_g': g_value,  
+                'white_r': r_value,  
+                'binary_threshold': binary_value
+            }
+        """
+        try:
+            b_value = color_input["white_b"]
+            g_value = color_input["white_g"]
+            r_value = color_input["white_r"]
+            binary_value = color_input["binary_threshold"]
+
+            self.inference_thread.white_b = b_value
+            self.inference_thread.white_g = g_value
+            self.inference_thread.white_r = r_value
+            self.inference_thread.threshold_value = binary_value
+        except Exception as e:
+            self.error_occurred.emit("Synced Color Parameters Failed", str(e))
                                  
     # Buttom
     def toggle_camera(self, checked: bool) -> bool:
@@ -97,15 +120,15 @@ class MainCore(QObject):
             except Exception as e:
                 self.error_occurred.emit("Camera Stop Failed", str(e))
                 return False
-            
+    
     def toggle_detection(self, checked: bool) -> bool:
         if checked:
-            self.inference_thread.is_detacting = True
+            self.inference_thread.is_detecting = True
             return True
         else:
-            self.inference_thread.is_detacting = False
+            self.inference_thread.is_detecting = False
             return True
-        
+    
     def toggle_control(self, checked: bool) -> bool:
         if checked:
             self.inference_thread.auto_control = True
@@ -145,7 +168,6 @@ class MainCore(QObject):
     def set_second_inference_model(self, model: str) -> None:
         """ Set second inference model. """
         self.inference_thread.second_inference_model = model
-
 
     # Data processing
     def process_inference_data(self, q_img: QImage, data: list) -> None:

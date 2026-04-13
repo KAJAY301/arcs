@@ -52,7 +52,7 @@ class InferenceThread(QThread):
         self.mm_per_pulses_y = load_env_config().get('motor_mm_per_pulse_y')
         self.deadband_mm = 1.0
 
-        self.is_detacting = False
+        self.is_detecting = False
         self.auto_control = False
         self.running = True
         self.last_crop = None
@@ -63,7 +63,10 @@ class InferenceThread(QThread):
         self.threshold_value = 52 #去除背景
         self.kernel_size = 40     #去除雜訊
 
-        self.white_bgr = np.array([26, 39, 42]) #白色的標準BGR值
+        self.white_b = 26
+        self.white_g = 39
+        self.white_r = 42
+        #self.white_bgr = np.array([26, 39, 42]) #白色的標準BGR值
         self.color_threshold = 10               #容許偏差
 
     def update_params(self, ui_intput: dict) -> None:
@@ -293,7 +296,8 @@ class InferenceThread(QThread):
 
     def is_white(self, b, g, r):
         current_color = np.array([b, g, r])
-        distance = np.linalg.norm(current_color - self.white_bgr)
+        white_bgr = np.array([self.white_b, self.white_g, self.white_r])
+        distance = np.linalg.norm(current_color - white_bgr)
         #print(f"Sampled Color (BGR): {b}, {g}, {r}, Distance: {distance}")
         return distance < self.color_threshold
 
@@ -313,18 +317,17 @@ class InferenceThread(QThread):
             # Cut image to 640x640
             img = self.cut_img(frame, cx, cy, size_x=640, size_y=640)
             # If not detecting, just send the image back to ui
-            if not self.is_detacting:
+            if not self.is_detecting:
                 if self.display_mode == "close":
-                    continue
+                    pass
                 if self.display_mode == "raw":
                     # Need to resize raw frame
                     q_img = cv2_to_qimage(frame)
                     self.ui_signal.emit(q_img, [])
-                    continue
                 if self.display_mode == "zoom_in":
                     q_img = cv2_to_qimage(img)
                     self.ui_signal.emit(q_img, [])
-                    continue
+                continue
             
             # Second inference
             first_points, second_points, processed_img = self.second_inference(img)

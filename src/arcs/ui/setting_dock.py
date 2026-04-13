@@ -33,7 +33,7 @@ class SettingDock(QDockWidget):
         setting_layout.addWidget(self.pixel_input, 3, 1)
 
         # Camera start/stop button
-        self.start_btn = QPushButton("Start Camera")
+        self.start_btn = QPushButton("Camera Stopped")
         self.start_btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.start_btn.setCheckable(True)
         left_layout.addWidget(self.start_btn, stretch=2)
@@ -52,7 +52,8 @@ class SettingDock(QDockWidget):
         left_layout.addWidget(Alarm_widget, stretch=1)
 
         # Detect button
-        self.detect_btn = QPushButton("Start Detect")
+        
+        self.detect_btn = QPushButton("Detection Stopped")
         self.detect_btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.detect_btn.setCheckable(True)
         left_layout.addWidget(self.detect_btn, stretch=2)
