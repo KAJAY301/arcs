@@ -249,7 +249,7 @@ class InferenceThread(QThread):
         # Padding
         crop_padded = cv2.copyMakeBorder(
             crop, top, bottom, left, right, 
-            cv2.BORDER_CONSTANT, value=(50, 50, 50)
+            cv2.BORDER_CONSTANT, value=(255, 255, 255)
         )
 
         # BGR to RGB for Qt
@@ -320,11 +320,11 @@ class InferenceThread(QThread):
             if not self.is_detecting:
                 if self.display_mode == "close":
                     pass
-                if self.display_mode == "raw":
+                elif self.display_mode == "raw":
                     # Need to resize raw frame
                     q_img = cv2_to_qimage(frame)
                     self.ui_signal.emit(q_img, [])
-                if self.display_mode == "zoom_in":
+                elif self.display_mode == "zoom_in":
                     q_img = cv2_to_qimage(img)
                     self.ui_signal.emit(q_img, [])
                 continue

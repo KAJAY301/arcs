@@ -17,22 +17,24 @@ class ColorSettingDock(QDockWidget):
         setting_layout = QGridLayout(setting_group)
         main_layout.addWidget(setting_group, stretch=3)
 
+        setting_layout.addWidget(QLabel("First Cross Basic Color:"), 0, 0)
+
         self.color_preview = QFrame()
-        self.color_preview.setFixedSize(150, 150)
+        self.color_preview.setFixedSize(100, 100)
         self.color_preview.setFrameShape(QFrame.StyledPanel)
-        setting_layout.addWidget(self.color_preview, 0, 0, 3, 1)
+        setting_layout.addWidget(self.color_preview, 1, 0, 3, 1)
 
-        setting_layout.addWidget(QLabel("B:"), 0, 1)
+        setting_layout.addWidget(QLabel("B:"), 1, 1)
         self.b_input = QSpinBox()
-        setting_layout.addWidget(self.b_input, 0, 2)
+        setting_layout.addWidget(self.b_input, 1, 2)
 
-        setting_layout.addWidget(QLabel("G:"), 1, 1)
+        setting_layout.addWidget(QLabel("G:"), 2, 1)
         self.g_input = QSpinBox()
-        setting_layout.addWidget(self.g_input, 1, 2)
+        setting_layout.addWidget(self.g_input, 2, 2)
 
-        setting_layout.addWidget(QLabel("R:"), 2, 1)
+        setting_layout.addWidget(QLabel("R:"), 3, 1)
         self.r_input = QSpinBox()
-        setting_layout.addWidget(self.r_input, 2, 2)
+        setting_layout.addWidget(self.r_input, 3, 2)
 
         # Binary threshold
         binary_widget = QWidget()

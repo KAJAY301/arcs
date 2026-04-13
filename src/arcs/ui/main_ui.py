@@ -228,8 +228,8 @@ class MainUi(QMainWindow):
 
     # Change Mode
     def set_display_mode(self, mode: str):
-            print(f"Switching display mode to {mode}")
             if mode in ["cv2_gray", "cv2_binary", "cv2_horizon", "cv2_vertical"]:
+                # Check if need to switch inference model
                 if self.core.inference_thread.second_inference_model in ["yolo_v11_box", "yolo_v11_pose"]:
                     reply = QMessageBox.question(
                         self, 
@@ -241,8 +241,10 @@ class MainUi(QMainWindow):
                     )
                     if reply == QMessageBox.Yes:
                         self.core.set_second_inference_model("cv2")
-                        self.core.set_display_mode(mode)
+                    else:
+                        return
 
+                # Check if need to start detection
                 if not self.core.inference_thread.is_detecting:
                     reply = QMessageBox.question(
                         self,
@@ -255,16 +257,18 @@ class MainUi(QMainWindow):
                     if reply == QMessageBox.Yes:
                         self.toggle_detection(True)
                         self.setting_dock.detect_btn.setChecked(True)
-                        self.core.set_display_mode(mode)
+                    else:
+                        return
+                
+                # Always set display mode at the end
+                self.core.set_display_mode(mode)
             else:
                 self.core.set_display_mode(mode)
             
     def set_first_inference_model(self, model: str):
-            print(f"Switching first inference model to {model}")
             self.core.set_first_inference_model(model)
     
     def set_second_inference_model(self, model: str):
-            print(f"Switching second inference model to {model}")
             if model in ["yolo_v11_box", "yolo_v11_pose"] and self.core.inference_thread.display_mode in ["cv2_gray", "cv2_binary", "cv2_horizon", "cv2_vertical"]:
                 reply = QMessageBox.question(
                     self, 
@@ -276,9 +280,9 @@ class MainUi(QMainWindow):
                 )
                 if reply == QMessageBox.Yes:
                     self.core.set_display_mode("zoom_in")
-                    self.core.set_second_inference_model(model)
-            else:
-                self.core.set_second_inference_model(model)
+                else:
+                    return
+            self.core.set_second_inference_model(model)
 
     # Inference result
     def handle_inference_result(self, q_img):
