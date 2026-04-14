@@ -4,7 +4,7 @@
   },
   "setting": {
     "length_cm": 20.0,
-    "speed_m_min": 71.0,
+    "speed_m_min": 80.0,
     "pixel_mm": 0.045,
     "alarm_dist": 0.3,
     "manual_move_mm": 1

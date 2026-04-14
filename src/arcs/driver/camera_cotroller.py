@@ -1,8 +1,9 @@
 from pypylon import pylon
-from PyQt5.QtCore import QObject, QTimer, pyqtSignal
+from PyQt5.QtCore import QObject, pyqtSignal
 import numpy as np
 
 from arcs.utils.config_manager import load_json_config, load_model_path
+from arcs.core.camera_thread import CameraGrabberThread
 
 class Camera(QObject):
     raw_frame_signal = pyqtSignal(np.ndarray)
@@ -13,8 +14,9 @@ class Camera(QObject):
         self.is_running = False
         self.pylon_camera = None
         self.cfg = load_json_config()
-        self.camera_timer = QTimer()
-        self.camera_timer.timeout.connect(self.grab_frame)
+        
+        self.grab_thread = CameraGrabberThread(self)
+        self.grab_thread.raw_frame_signal.connect(self._forward_frame)
 
     def open(self):
         """
@@ -26,20 +28,17 @@ class Camera(QObject):
         self.is_opened = True
 
     def start_grabbing(self):
-        """
-        Start the camera and begin grabbing frames.
-        """
-        # GrabStrategy_LatestImageOnly: Return the latest image
-        # GrabStrategy_UpcomingImage: Reture the next image after calling
+        """Start camera and frame grabbing thread"""
         self.pylon_camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly)
-        self.camera_timer.start(50) 
         self.is_running = True
+        self.grab_thread.is_running = True
+        self.grab_thread.start()
 
     def stop_grabbing(self):
-        """
-        Stop the camera and release resources.
-        """
-        self.camera_timer.stop()
+        """Stop frame grabbing and thread"""
+        self.grab_thread.is_running = False
+        self.grab_thread.wait()
+        
         if self.pylon_camera.IsGrabbing():
             self.pylon_camera.StopGrabbing()
         self.is_running = False
@@ -85,17 +84,12 @@ class Camera(QObject):
             print(f"Error updating camera params: {e}")
 
     def grab_frame(self):
-        if self.is_running:
-            try:
-                # timeout:500ms, If timeout, throw exception. or can use (pylon.TimeoutHandling_Return) to return None
-                res = self.pylon_camera.RetrieveResult(500, pylon.TimeoutHandling_ThrowException)
-                if res.GrabSucceeded():
-                    img = res.Array
-                    self.raw_frame_signal.emit(img)
-                    #self.infer_thread.submit_frame(img)
-                res.Release()
-            except Exception:
-                pass
+        """Legacy method - kept for compatibility"""
+        pass
+    
+    def _forward_frame(self, frame):
+        """Forward frame signal from grabber thread"""
+        self.raw_frame_signal.emit(frame)
 """
         class MyCameraHandler(pylon.ImageEventHandler):
             def __init__(self, yolo_thread):

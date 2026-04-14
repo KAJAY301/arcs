@@ -18,8 +18,7 @@ class MockGrabResult:
 
 class MockInstantCamera:
     def __init__(self, *args, **kwargs):
-        self.last_grab_time = 0
-        self.frame_interval = 0.5#s
+        self.frame_interval = 0.5  # Test frame rate control in worker thread
 
         self.img_dir = Path("test/test_img")
         self.img_extensions = ('.jpg')
@@ -45,20 +44,13 @@ class MockInstantCamera:
         return True
 
     def RetrieveResult(self, timeout, grab_strategy):
-        now = time.time()
-        elapsed = now - self.last_grab_time
-        
-        if elapsed < self.frame_interval:
-            time.sleep(self.frame_interval - elapsed)
-
         img_path = next(self.image_cycle)
         if img_path is None:
             return MagicMock(GrabSucceeded=lambda: False)
             
-        frame = cv2.imread(img_path)#imread as BGR
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)#convert to RGB
+        frame = cv2.imread(img_path)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         
-        self.last_grab_time = time.time()
         return MockGrabResult(frame)
 
     def StopGrabbing(self): 

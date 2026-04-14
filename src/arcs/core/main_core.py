@@ -66,8 +66,12 @@ class MainCore(QObject):
             }
         """
         try:
-            self.inference_thread.update_params(ui_input)
+            #self.inference_thread.update_params(ui_input)
+            self.inference_thread.pixel_size = ui_input["pixel_input"]
+            self.inference_thread.deadband_mm = ui_input["threshold_input"]
+
             self.camera.update_params(ui_input)
+
             self.pixel_size = ui_input["pixel_input"]
             self.status_msg.emit("Synced Parameters Successfully")
         except Exception as e:

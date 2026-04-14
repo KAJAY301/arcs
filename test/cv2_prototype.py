@@ -2,6 +2,13 @@ import cv2
 import time
 import numpy as np
 
+import torch
+print(f"PyTorch 版本: {torch.__version__}")
+print(f"CUDA 可用: {torch.cuda.is_available()}")
+print(f"CUDA 版本: {torch.version.cuda}")
+print(f"当前 GPU: {torch.cuda.get_device_name(0)}")
+print(f"GPU 算力: {torch.cuda.get_device_capability(0)}")
+
 #global variables
 threshold_value = 52 #去除背景
 kernel_size = 40 #去除雜訊

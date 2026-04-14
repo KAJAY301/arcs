@@ -1,15 +1,18 @@
 import cv2
 import os
 import numpy as np
+import torch
+import time
 
-from time import time
+from time import time as time_now
 from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5.QtGui import QImage
 from ultralytics import YOLO
 from queue import Queue, Empty
+import threading
 
 from arcs.utils.config_manager import load_env_config, load_json_config, load_model_path
-from arcs.utils.image_processor import cv2_to_qimage, save_image_timed
+from arcs.utils.image_processor import cv2_to_qimage, save_image_timed, cut_image, resize_image
 from arcs.utils.data_processor import pixel_to_pulse
 
 class InferenceThread(QThread):
@@ -31,11 +34,26 @@ class InferenceThread(QThread):
 
         first_model_path = load_model_path(first_model)
         second_model_path = load_model_path(second_model)
+        
+        # Check GPU availability
+        self.device = 0 if torch.cuda.is_available() else 'cpu'
+        if self.device == 0:
+            print(f"[YOLO] GPU detected: {torch.cuda.get_device_name(0)}")
+        else:
+            print(f"[YOLO] GPU not available, using CPU")
+        
+        # Load models
         self.first_model = YOLO(first_model_path)
         self.second_model = YOLO(second_model_path)
+        
+        # Move models to GPU if available
+        if self.device == 0:
+            self.first_model.to(self.device)
+            self.second_model.to(self.device)
 
         # Frame Queue
-        self.frame_q = Queue(maxsize=2)
+        self.frame_q = Queue(maxsize=1)
+        self.frame_lock = threading.Lock()
 
         # Unidentifyed image saving
         self.save_dir = "data/no_match_img"
@@ -69,15 +87,16 @@ class InferenceThread(QThread):
         #self.white_bgr = np.array([26, 39, 42]) #白色的標準BGR值
         self.color_threshold = 10               #容許偏差
 
-    def update_params(self, ui_intput: dict) -> None:
-        self.pixel_size = ui_intput.get('pixel_input')
-        self.deadband_mm = ui_intput.get('threshold_input')
-
     def submit_frame(self, frame):
-        if self.frame_q.full():
-            try: self.frame_q.get_nowait()
-            except: pass
-        self.frame_q.put(frame)
+        """Submit frame to processing queue. Drops old frames if queue is full."""
+        with self.frame_lock:
+            # Clear old frames and add new one
+            if self.frame_q.full():
+                try:
+                    self.frame_q.get_nowait()
+                except Empty:
+                    pass
+            self.frame_q.put(frame)
 
     def first_inference(self, frame) -> tuple:
         try:
@@ -87,7 +106,8 @@ class InferenceThread(QThread):
                 conf=self.conf, 
                 iou=self.iou, 
                 max_det=1, 
-                verbose=False
+                verbose=False,
+                device=self.device
             )
             res = results[0]
             if res.boxes:
@@ -97,6 +117,7 @@ class InferenceThread(QThread):
             return cx, cy
         except Exception as e:
             print(f"First Infer Error: {e}")
+            return None, None
 
     def second_inference(self, img):
         """
@@ -113,7 +134,8 @@ class InferenceThread(QThread):
                     img, 
                     conf=self.conf+0.1, 
                     iou=self.iou, 
-                    verbose=False
+                    verbose=False,
+                    device=self.device
                 )
                 res = results[0]
 
@@ -217,54 +239,17 @@ class InferenceThread(QThread):
                     return_img = h_lines
                 elif self.display_mode == "cv2_vertical":
                     return_img = v_lines
+                else:
+                    return_img = img
 
                 return f_pt, s_pt, return_img
 
         except Exception as e:
             print(f"Second Infer Error: {e}")
-
-    def cut_img(self, img, cx, cy, size_x, size_y):
-        size_x = size_x // 2
-        size_y = size_y // 2
-        x1, x2 = int(cx - size_x), int(cx + size_x)
-        y1, y2 = int(cy - size_y), int(cy + size_y)
-
-        top, bottom, left, right = 0, 0, 0, 0
-        h, w = img.shape[:2]
-        if x1 < 0:
-            left = abs(x1)
-            x1 = 0
-        if x2 > w:
-            right = x2 - w
-            x2 = w
-        if y1 < 0:
-            top = abs(y1)
-            y1 = 0
-        if y2 > h:
-            bottom = y2 - h
-            y2 = h
-
-        crop = img[y1:y2, x1:x2]
-
-        # Padding
-        crop_padded = cv2.copyMakeBorder(
-            crop, top, bottom, left, right, 
-            cv2.BORDER_CONSTANT, value=(255, 255, 255)
-        )
-
-        # BGR to RGB for Qt
-        #crop_rgb = cv2.cvtColor(crop_padded, cv2.COLOR_BGR2RGB)
-        """
-        #cv2 to QImage
-        h, w, ch = crop_rgb.shape
-        bytes_per_line = ch * w
-        q_img = QImage(crop_rgb.data, w, h, bytes_per_line, QImage.Format_RGB888).copy()
-        self.last_crop = q_img
-        """
-        return crop_padded
+            return None, None, img
     
     def save_img(self, img):
-        current_time = time()
+        current_time = time_now()
         if (current_time - self.last_save_time >= self.cooldown_seconds) and (self.current_save_count < self.max_save_count):
             success = save_image_timed(img, base_path="data/no_match_img")
             if success:
@@ -310,23 +295,30 @@ class InferenceThread(QThread):
                 continue
             
             # first inference
+            #h, w = frame.shape[:2]
+            #small_frame = resize_image(frame, width=w//4, height=h//4)
             cx, cy = self.first_inference(frame)
             if cx is None or cy is None:
                 continue
+            #cx *= 4
+            #cy *= 4
             
             # Cut image to 640x640
-            img = self.cut_img(frame, cx, cy, size_x=640, size_y=640)
+            img = cut_image(frame, cx, cy, size_x=640, size_y=640)
             # If not detecting, just send the image back to ui
             if not self.is_detecting:
                 if self.display_mode == "close":
                     pass
                 elif self.display_mode == "raw":
                     # Need to resize raw frame
+                    frame = resize_image(frame, width=640, height=640)
                     q_img = cv2_to_qimage(frame)
                     self.ui_signal.emit(q_img, [])
+                    time.sleep(0.001)
                 elif self.display_mode == "zoom_in":
                     q_img = cv2_to_qimage(img)
                     self.ui_signal.emit(q_img, [])
+                    time.sleep(0.001)
                 continue
             
             # Second inference
@@ -337,29 +329,30 @@ class InferenceThread(QThread):
                 if self.display_mode == "close":
                     return_ui_img = None
                 elif self.display_mode == "raw":
+                    frame = resize_image(frame, width=640, height=640)
                     return_ui_img = cv2_to_qimage(frame)
                 else:
                     return_ui_img = cv2_to_qimage(processed_img)
 
                 self.ui_signal.emit(return_ui_img, [])
-
+                time.sleep(0.001)
                 continue
       
             # Send drawed image
-            """ ===DRAW CENTER===
-            if self.draw_center:
+            if self.is_detecting:
                 cv2.circle(processed_img, first_points, 2, (255, 255, 255), -1)
                 cv2.circle(processed_img, second_points, 2, (0, 0, 255), -1)
-            """
 
             if self.display_mode == "close":
                 return_ui_img = None
             elif self.display_mode == "raw":
+                frame = resize_image(frame, width=640, height=640)
                 return_ui_img = cv2_to_qimage(frame)
             else:
                 return_ui_img = cv2_to_qimage(processed_img)
 
             self.ui_signal.emit(return_ui_img, [first_points, second_points])
+            time.sleep(0.001)
 
             # Send data to PLC if auto_control is enabled
             if self.auto_control:
