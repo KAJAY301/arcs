@@ -25,26 +25,25 @@ class InferenceThread(QThread):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        # Parameters
+        # Load models
         cfg = load_json_config()
-        first_model = cfg.get('inference').get('first_model')
-        second_model = cfg.get('inference').get('second_model')
-        self.conf = cfg.get('inference').get('conf_threshold')
-        self.iou = cfg.get('inference').get('iou_threshold')
 
-        first_model_path = load_model_path(first_model)
-        second_model_path = load_model_path(second_model)
+        first_model = cfg.get('yolo').get('first_model')
+        self.first_model = YOLO(load_model_path(first_model))
+        self.first_model_conf = cfg.get('yolo').get('first_model_conf')
+        self.first_model_iou = cfg.get('yolo').get('first_model_iou')
+
+        second_model = cfg.get('yolo').get('second_model')
+        self.second_model = YOLO(load_model_path(second_model))
+        self.second_model_conf = cfg.get('yolo').get('second_model_conf')
+        self.second_model_iou = cfg.get('yolo').get('second_model_iou')
         
         # Check GPU availability
         self.device = 0 if torch.cuda.is_available() else 'cpu'
         if self.device == 0:
-            print(f"[YOLO] GPU detected: {torch.cuda.get_device_name(0)}")
+            print(f"GPU detected: {torch.cuda.get_device_name(0)}")
         else:
-            print(f"[YOLO] GPU not available, using CPU")
-        
-        # Load models
-        self.first_model = YOLO(first_model_path)
-        self.second_model = YOLO(second_model_path)
+            print("GPU not available, using CPU")
         
         # Move models to GPU if available
         if self.device == 0:
@@ -65,27 +64,25 @@ class InferenceThread(QThread):
             os.makedirs(self.save_dir)
         self.current_save_count = len(os.listdir(self.save_dir))
 
-        self.pixel_size = 0.035  # mm per pixel
+        self.pixel_size = cfg.get('setting').get('pixel_mm')
+        self.deadband_mm = cfg.get('setting').get('alarm_dist')
         self.mm_per_pulses_x = load_env_config().get('motor_mm_per_pulse_x')
         self.mm_per_pulses_y = load_env_config().get('motor_mm_per_pulse_y')
-        self.deadband_mm = 1.0
 
         self.is_detecting = False
         self.auto_control = False
         self.running = True
         self.last_crop = None
-        self.display_mode = "zoom_in" # close, raw, zoom_in, cv2_gray, cv2_binary, cv2_horizon, cv2_vertical
-        self.first_inference_model = "yolo_v8" #目前無作用
-        self.second_inference_model = "cv2"
+        self.display_mode = cfg.get('display').get('mode')
+        self.first_inference_model = cfg.get('inference').get('first_inference_model') #"yolo_v11n"(目前無作用
+        self.second_inference_model = cfg.get('inference').get('second_inference_model') #"cv2"
 
-        self.threshold_value = 52 #去除背景
-        self.kernel_size = 40     #去除雜訊
-
-        self.white_b = 26
-        self.white_g = 39
-        self.white_r = 42
-        #self.white_bgr = np.array([26, 39, 42]) #白色的標準BGR值
-        self.color_threshold = 10               #容許偏差
+        self.threshold_value = cfg.get('cv2_setting').get('binary_threshold') #去除背景
+        self.kernel_size = cfg.get('cv2_setting').get('kernel_size')          #去除雜訊
+        self.white_b = cfg.get('cv2_setting').get('white_b')
+        self.white_g = cfg.get('cv2_setting').get('white_g')
+        self.white_r = cfg.get('cv2_setting').get('white_r')
+        self.color_threshold = cfg.get('cv2_setting').get('color_threshold')  #容許偏差
 
     def submit_frame(self, frame):
         """Submit frame to processing queue. Drops old frames if queue is full."""
@@ -103,8 +100,8 @@ class InferenceThread(QThread):
             cx, cy = None, None
             results = self.first_model.predict(
                 frame, 
-                conf=self.conf, 
-                iou=self.iou, 
+                conf=self.first_model_conf, 
+                iou=self.first_model_iou, 
                 max_det=1, 
                 verbose=False,
                 device=self.device
@@ -132,8 +129,8 @@ class InferenceThread(QThread):
             if self.second_inference_model == "yolo_v11_box" or self.second_inference_model == "yolo_v11_pose":
                 results = self.second_model.predict(
                     img, 
-                    conf=self.conf+0.1, 
-                    iou=self.iou, 
+                    conf=self.second_model_conf, 
+                    iou=self.second_model_iou, 
                     verbose=False,
                     device=self.device
                 )
@@ -314,11 +311,9 @@ class InferenceThread(QThread):
                     frame = resize_image(frame, width=640, height=640)
                     q_img = cv2_to_qimage(frame)
                     self.ui_signal.emit(q_img, [])
-                    time.sleep(0.001)
                 elif self.display_mode == "zoom_in":
                     q_img = cv2_to_qimage(img)
                     self.ui_signal.emit(q_img, [])
-                    time.sleep(0.001)
                 continue
             
             # Second inference
@@ -335,7 +330,6 @@ class InferenceThread(QThread):
                     return_ui_img = cv2_to_qimage(processed_img)
 
                 self.ui_signal.emit(return_ui_img, [])
-                time.sleep(0.001)
                 continue
       
             # Send drawed image
@@ -352,7 +346,6 @@ class InferenceThread(QThread):
                 return_ui_img = cv2_to_qimage(processed_img)
 
             self.ui_signal.emit(return_ui_img, [first_points, second_points])
-            time.sleep(0.001)
 
             # Send data to PLC if auto_control is enabled
             if self.auto_control:

@@ -3,11 +3,18 @@
     "theme": "dark"
   },
   "setting": {
-    "length_cm": 20.0,
-    "speed_m_min": 80.0,
+    "length_cm": 19.99,
+    "speed_m_min": 81.0,
     "pixel_mm": 0.045,
     "alarm_dist": 0.3,
     "manual_move_mm": 1
+  },
+  "display": {
+    "mode": "zoom_in",
+    "size": [
+      640,
+      640
+    ]
   },
   "camera": {
     "reverse_x": true,
@@ -15,9 +22,23 @@
     "PixelFormat": "RGB8"
   },
   "inference": {
+    "first_inference_model": "yolo_v11n",
+    "second_inference_model": "cv2"
+  },
+  "yolo": {
     "first_model": "pose_two_cross_11n",
+    "first_model_conf": 0.5,
+    "first_model_iou": 0.9,
     "second_model": "pose_two_cross_11n_640_0109",
-    "conf_threshold": 0.5,
-    "iou_threshold": 0.9
+    "second_model_conf": 0.6,
+    "second_model_iou": 0.9
+  },
+  "cv2_setting": {
+    "binary_threshold": 60,
+    "kernel_size": 40,
+    "white_b": 26,
+    "white_g": 39,
+    "white_r": 42,
+    "color_threshold": 10
   }
 }

@@ -136,7 +136,7 @@ class MainUi(QMainWindow):
                 #first inference model
         first_inference_submenu = QMenu('First Inference', self)
         inference_menu.addMenu(first_inference_submenu)
-        first_inference_submenu.addAction("YOLOv8", lambda: self.set_first_inference_model("yolo_v8"))
+        first_inference_submenu.addAction("YOLOv11", lambda: self.set_first_inference_model("yolo_v11"))
         
                 # second inference model
         second_inference_submenu = QMenu('Second Inference', self)
@@ -171,7 +171,7 @@ class MainUi(QMainWindow):
                 'threshold_input': threshold_input
             }
             self.core.update_system_parameters(ui_input)
-            self.monitor_dock.update_params(ui_input)
+            self.monitor_dock.update_setting_params(ui_input)
         except Exception as e:
             print(f"Error syncing UI params: {e}")
             pass
@@ -182,17 +182,23 @@ class MainUi(QMainWindow):
             g_value = self.color_setting_dock.g_input.value()
             r_value = self.color_setting_dock.r_input.value()
             binary_value = self.color_setting_dock.binary_input.value()
-
+        except ValueError:
+            pass
+        try:
+            # Update color preview
             style = f"background-color: rgb({r_value}, {g_value}, {b_value}); border: 1px solid black; border-radius: 10px;"
             self.color_setting_dock.color_preview.setStyleSheet(style)
             # update inference parameters(BGR and binary threshold)
-            self.core.update_color_parameters({
+            color_input = {
                 'white_b': b_value,
                 'white_g': g_value,
                 'white_r': r_value,
                 'binary_threshold': binary_value
-            })
-        except:
+            }
+            self.core.update_color_parameters(color_input)
+            self.monitor_dock.update_color_params(color_input)
+        except Exception as e:
+            print(f"Error updating color params: {e}")
             pass
 
     # Toggle
@@ -241,6 +247,7 @@ class MainUi(QMainWindow):
                     )
                     if reply == QMessageBox.Yes:
                         self.core.set_second_inference_model("cv2")
+                        self.monitor_dock.update_second_inference_model("cv2")  
                     else:
                         return
 
@@ -262,8 +269,10 @@ class MainUi(QMainWindow):
                 
                 # Always set display mode at the end
                 self.core.set_display_mode(mode)
+                self.monitor_dock.update_display_mode(mode)
             else:
                 self.core.set_display_mode(mode)
+                self.monitor_dock.update_display_mode(mode)
             
     def set_first_inference_model(self, model: str):
             self.core.set_first_inference_model(model)
@@ -280,9 +289,11 @@ class MainUi(QMainWindow):
                 )
                 if reply == QMessageBox.Yes:
                     self.core.set_display_mode("zoom_in")
+                    self.monitor_dock.update_display_mode("zoom_in")
                 else:
                     return
             self.core.set_second_inference_model(model)
+            self.monitor_dock.update_second_inference_model(model)
 
     # Inference result
     def handle_inference_result(self, q_img):
@@ -369,5 +380,9 @@ class MainUi(QMainWindow):
             cfg["setting"]["speed_m_min"] = float(self.setting_dock.speed_input.value())
             cfg["setting"]["pixel_mm"] = float(self.setting_dock.pixel_input.value())
             cfg["setting"]["alarm_dist"] = float(self.setting_dock.threshold_input.value())
+            cfg["color_setting"]["white_b"] = self.color_setting_dock.b_input.value()
+            cfg["color_setting"]["white_g"] = self.color_setting_dock.g_input.value()
+            cfg["color_setting"]["white_r"] = self.color_setting_dock.r_input.value()
+            cfg["color_setting"]["binary_threshold"] = self.color_setting_dock.binary_input.value()
         except:
             pass
