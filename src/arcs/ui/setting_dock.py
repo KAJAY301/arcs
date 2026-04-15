@@ -41,7 +41,7 @@ class SettingDock(QDockWidget):
         # Alarm panel
         Alarm_widget = QWidget()
         Alarm_layout = QGridLayout(Alarm_widget)
-        Alarm_layout.addWidget(QLabel("Auto Threshold:"), 0, 0)
+        Alarm_layout.addWidget(QLabel("Deadband:"), 0, 0)
         self.threshold_input = QDoubleSpinBox()
         Alarm_layout.addWidget(self.threshold_input, 0, 1)
         """
@@ -118,7 +118,7 @@ class SettingDock(QDockWidget):
         self.length_cm_input.setValue(setting.get('length_cm'))
         self.speed_input.setValue(setting.get('speed_m_min'))
         self.pixel_input.setValue(setting.get('pixel_mm'))
-        self.threshold_input.setValue(setting.get('alarm_dist'))
+        self.threshold_input.setValue(setting.get('deadband_dist'))
 
     def update_length_from_cm(self):
         try:

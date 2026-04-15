@@ -303,6 +303,7 @@ class MainUi(QMainWindow):
         if should_alarm:
             # Alarm
             self.img_label.setStyleSheet("background-color: #000000; border: 10px solid #E03C3C;")
+            self.log_dock.add_log_message("CRITICAL", "Excessive displacement.")
             # can add alarm sound
         else:
             # Normal
@@ -379,7 +380,7 @@ class MainUi(QMainWindow):
             cfg["setting"]["length_cm"] = float(self.setting_dock.length_cm_input.value())
             cfg["setting"]["speed_m_min"] = float(self.setting_dock.speed_input.value())
             cfg["setting"]["pixel_mm"] = float(self.setting_dock.pixel_input.value())
-            cfg["setting"]["alarm_dist"] = float(self.setting_dock.threshold_input.value())
+            cfg["setting"]["deadband_dist"] = float(self.setting_dock.threshold_input.value())
             cfg["color_setting"]["white_b"] = self.color_setting_dock.b_input.value()
             cfg["color_setting"]["white_g"] = self.color_setting_dock.g_input.value()
             cfg["color_setting"]["white_r"] = self.color_setting_dock.r_input.value()

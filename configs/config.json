@@ -4,10 +4,11 @@
   },
   "setting": {
     "length_cm": 19.99,
-    "speed_m_min": 81.0,
+    "speed_m_min": 80.0,
     "pixel_mm": 0.045,
-    "alarm_dist": 0.3,
-    "manual_move_mm": 1
+    "deadband_dist": 0.2,
+    "manual_move_mm": 1,
+    "alarm_dist": 0.5
   },
   "display": {
     "mode": "zoom_in",

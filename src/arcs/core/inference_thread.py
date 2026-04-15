@@ -65,7 +65,7 @@ class InferenceThread(QThread):
         self.current_save_count = len(os.listdir(self.save_dir))
 
         self.pixel_size = cfg.get('setting').get('pixel_mm')
-        self.deadband_mm = cfg.get('setting').get('alarm_dist')
+        self.deadband_mm = cfg.get('setting').get('deadband_dist')
         self.mm_per_pulses_x = load_env_config().get('motor_mm_per_pulse_x')
         self.mm_per_pulses_y = load_env_config().get('motor_mm_per_pulse_y')
 

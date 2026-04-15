@@ -43,6 +43,7 @@ class MainCore(QObject):
         env = load_env_config()
 
         manual_move_mm = cfg.get('setting').get('manual_move_mm')
+        self.alarm_distance = cfg.get('setting').get('alarm_dist')
         mm_per_pulses_x = env.get('motor_mm_per_pulse_x')
         mm_per_pulses_y = env.get('motor_mm_per_pulse_y')
         self.pulses_x = int(manual_move_mm / mm_per_pulses_x)
@@ -66,13 +67,14 @@ class MainCore(QObject):
             }
         """
         try:
-            #self.inference_thread.update_params(ui_input)
+            # Core
+            self.pixel_size = ui_input["pixel_input"]
+            # InferenceThread
             self.inference_thread.pixel_size = ui_input["pixel_input"]
             self.inference_thread.deadband_mm = ui_input["threshold_input"]
-
+            # Camera
             self.camera.update_params(ui_input)
 
-            self.pixel_size = ui_input["pixel_input"]
             self.status_msg.emit("Synced Parameters Successfully")
         except Exception as e:
             self.error_occurred.emit("Synced Parameters Failed", str(e))
@@ -183,10 +185,9 @@ class MainCore(QObject):
         if data:
             self.log_data.emit(data)
             
-            alarm_distance = 1.0 #float(self.setting_dock.alarm_input.value())
             dis_pix = math.dist(data[0], data[1])
             dis_mm = dis_pix * float(self.pixel_size)
-            should_alarm = dis_mm > alarm_distance
+            should_alarm = dis_mm > self.alarm_distance
             if should_alarm != self.is_warning:
                 self.is_warning = should_alarm
                 self.alarm_trigger.emit(should_alarm)
