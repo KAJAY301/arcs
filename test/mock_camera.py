@@ -18,7 +18,7 @@ class MockGrabResult:
 
 class MockInstantCamera:
     def __init__(self, *args, **kwargs):
-        self.frame_interval = 0.5  # Test frame rate control in worker thread
+        self.frame_interval = 0.1  # Test frame rate control in worker thread
 
         self.img_dir = Path("test/test_img")
         self.img_extensions = ('.jpg')
